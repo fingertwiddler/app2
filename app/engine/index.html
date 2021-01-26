@@ -197,8 +197,6 @@
     document.addEventListener("DOMContentLoaded", async () => {
       let M = await require("~")
       let C = await require("theme")
-      await M.init()
-      await C.init()
       let source = document.querySelector("#template").innerHTML;
       let template = Handlebars.compile(source);
 
