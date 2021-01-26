@@ -31,7 +31,7 @@ const paginator = (M, filenames, meta, template, CHUNK) => {
   return res
 }
 const buildPost = async (M, C, key) => {
-  let tps = await C.fs.promises.readFile("/app/layouts/post.hbs", "utf8")
+  let tps = await C.fs.promises.readFile("/post.hbs", "utf8")
   let tpl = Handlebars.compile(tps)
   // Parse the source file
   let contentPath = M.config.path.src.content + "/" + key
@@ -104,8 +104,8 @@ export const builder = async (M, C) => {
 
   // Instantiate templates
 //  let tis = await fs.promises.readFile("/app/index.hbs", "utf8")
-  let tds = await C.fs.promises.readFile("/app/layouts/dashboard.hbs", "utf8")
-  let tps = await C.fs.promises.readFile("/app/layouts/post.hbs", "utf8")
+  let tds = await C.fs.promises.readFile("/dashboard.hbs", "utf8")
+  let tps = await C.fs.promises.readFile("/post.hbs", "utf8")
   let tpl = {
     post: Handlebars.compile(tps),
     dashboard: Handlebars.compile(tds)
