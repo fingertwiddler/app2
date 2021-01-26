@@ -15,7 +15,7 @@ const paginator = (M, filenames, meta, template, CHUNK) => {
   for(let i=0; i<pages.length; i++) {
     counter[i].current = true;
     let html = template({
-      title: "skögard",
+      title: M.config.settings.name,
       base: M.config.settings.base,
       items: pages[i].map((filename) => {
         return {
