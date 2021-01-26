@@ -291,6 +291,18 @@ document.querySelector("#save").addEventListener("click", async (e) => {
 (async () => {
   console.time("Require")
   M = await require("~")
+  M.config = {
+    path: {
+      src: {
+        content: "/src",
+        assets: "/src/assets"
+      },
+      dest: {
+        content: "/blog",
+        assets: "/blog/assets"
+      }
+    }
+  }
   C = await require("theme")
   console.timeEnd("Require")
   src = new URL(location.href).searchParams.get("src")

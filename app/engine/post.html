@@ -119,6 +119,18 @@
     document.addEventListener("DOMContentLoaded", async () => {
       console.time("Require")
       let M = await require("~")
+      M.config = {
+        path: {
+          src: {
+            content: "/src",
+            assets: "/src/assets"
+          },
+          dest: {
+            content: "/blog",
+            assets: "/blog/assets"
+          }
+        }
+      }
       let C = await require("theme")
       console.timeEnd("Require")
       let source = document.querySelector("#template").innerHTML;
