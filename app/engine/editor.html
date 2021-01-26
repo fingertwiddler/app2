@@ -95,7 +95,7 @@ const render = async (path) => {
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await M.git.statusMatrix({ dir: "/" }))
+  const filenames = (await M.git.statusMatrix({ fs: M.fs, dir: "/" }))
     .filter((row) => {
       return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1)
     })
@@ -104,7 +104,7 @@ const updated = async () => {
 }
 const deleted = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await M.git.statusMatrix({ dir: "/" }))
+  const filenames = (await M.git.statusMatrix({ fs: M.fs, dir: "/" }))
     .filter((row) => {
       return row[WORKDIR] === 0
     })
