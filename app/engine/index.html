@@ -195,8 +195,10 @@
     import matter from "https://jspm.dev/gray-matter"
     import { require } from "/offbase.js"
     document.addEventListener("DOMContentLoaded", async () => {
+      console.time("Require")
       let M = await require("~")
       let C = await require("theme")
+      console.timeEnd("Require")
       let source = document.querySelector("#template").innerHTML;
       let template = Handlebars.compile(source);
 

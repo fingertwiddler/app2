@@ -289,8 +289,10 @@ document.querySelector("#save").addEventListener("click", async (e) => {
 
 
 (async () => {
+  console.time("Require")
   M = await require("~")
   C = await require("theme")
+  console.timeEnd("Require")
   src = new URL(location.href).searchParams.get("src")
   if (src) {
     render(decodeURIComponent(src))

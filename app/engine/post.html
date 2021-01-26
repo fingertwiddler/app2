@@ -117,13 +117,19 @@
     import { require } from "/offbase.js"
     let src = new URL(location.href).searchParams.get("src")
     document.addEventListener("DOMContentLoaded", async () => {
+      console.time("Require")
       let M = await require("~")
       let C = await require("theme")
+      console.timeEnd("Require")
       let source = document.querySelector("#template").innerHTML;
       let template = Handlebars.compile(source);
 
+      console.time("READ")
       let content = await M.fs.promises.readFile(M.config.path.src.content + "/" + src, "utf8")
+      console.timeEnd("READ")
+      console.time("Parse")
       let parsed = matter(content)
+      console.timeEnd("Parse")
       let md = parsed.content
       let metadata = parsed.data
 //      if (!metadata.updated) {
@@ -131,14 +137,13 @@
 //      }
       metadata.permalink = src
 
+      console.time("MD")
       let html = marked(md, { baseUrl: "./" }) 
+      console.timeEnd("MD")
       console.log("html = ", html)
 
-      let offbaseStr = await M.fs.promises.readFile("/offbase.json", "utf8")
-      let offbase = JSON.parse(offbaseStr)
-
       let rendered = template({
-        name: offbase.settings.name,
+        name: M.config.settings.name,
         content: html,
         updated: metadata.updated,
         draft: metadata.draft,
