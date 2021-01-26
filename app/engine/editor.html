@@ -28,6 +28,7 @@ import { require } from "/offbase.js"
 import { builder, build } from "./builder.js"
 var editor
 var M, C
+var src
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
@@ -290,7 +291,7 @@ document.querySelector("#save").addEventListener("click", async (e) => {
 (async () => {
   M = await require("~")
   C = await require("theme")
-  let src = new URL(location.href).searchParams.get("src")
+  src = new URL(location.href).searchParams.get("src")
   if (src) {
     render(decodeURIComponent(src))
   } else {
