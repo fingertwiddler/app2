@@ -204,8 +204,7 @@
     render(Handlebars.compile(document.querySelector("#template").innerHTML), PATH).then((content) => {
       document.body.innerHTML = content
       document.querySelectorAll(".updated").forEach((el) => {
-        const timestamp = parseInt(el.textContent)
-        el.textContent = timeago.format(timestamp)
+        el.textContent = timeago.format(parseInt(el.textContent))
       })
       document.querySelector("#menu-button").addEventListener("click", (e) => {
         document.querySelector(".menu-items").classList.toggle("collapsed")

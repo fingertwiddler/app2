@@ -20,10 +20,22 @@
       nav {
         display: flex;
         align-items: flex-start;
-        padding: 50px 20px;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 50px 0px;
       }
       nav h1 {
+        font-size: 40px;
+        line-height: 40px;
         margin: 0;
+      }
+      nav h1 a {
+        text-decoration: none;
+        color: rgba(0,0,0,0.8);
+        font-family: Georgia;
+        font-style: italic;
+        letter-spacing: -2px;
+        text-transform: lowercase;
       }
       h1 a {
         text-decoration: none;
@@ -92,10 +104,10 @@
         color: rgba(0,0,0,0.5);
       }
     </style>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/timeago.js/4.0.2/timeago.min.js" integrity="sha512-SVDh1zH5N9ChofSlNAK43lcNS7lWze6DTVx1JCXH1Tmno+0/1jMpdbR8YDgDUfcUrPp1xyE53G42GFrcM0CMVg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/timeago.js/4.0.2/timeago.min.js"></script>
     <script id="template" type="text/x-handlebars-template">
       <nav>
-        <h1><a href="./">{{name}}</a></h1>
+        <h1><a href="./">blog</a></h1>
         <div class='flexible'></div>
       </nav>
       {{#if draft}}
@@ -109,70 +121,33 @@
       </div>
       <main>{{{content}}}</main>
     </script>
+  </head>
+  <body>
     <script type='module'>
     import Handlebars from "https://jspm.dev/handlebars"
     import matter from "https://jspm.dev/gray-matter"
     import marked from "https://jspm.dev/marked"
-    //import { M, C } from "/offbase.js"
     import { fs } from "/offbase.js"
-    let src = new URL(location.href).searchParams.get("src")
-    document.addEventListener("DOMContentLoaded", async () => {
-      let M = {
-        config: {
-          path: {
-            src: {
-              content: "/home/src",
-              assets: "/home/src/assets"
-            },
-            dest: {
-              content: "/home/blog",
-              assets: "/home/blog/assets"
-            }
-          },
-          settings: {
-            name: "fingertwiddler",
-            base: "https://fingertwiddler.github.io/test/blog/"
-          }
-        }
-      }
-      let source = document.querySelector("#template").innerHTML;
-      let template = Handlebars.compile(source);
+    const src = new URL(location.href).searchParams.get("src")
+    const template = Handlebars.compile(document.querySelector("#template").innerHTML)
 
-      console.time("READ")
-      let content = await fs.promises.readFile(src, "utf8")
-      console.timeEnd("READ")
-      console.time("Parse")
+    fs.promises.readFile(src, "utf8").then((content) => {
       let parsed = matter(content)
-      console.timeEnd("Parse")
       let md = parsed.content
       let metadata = parsed.data
-//      if (!metadata.updated) {
-//        metadata.updated = Date.now()
-//      }
       metadata.permalink = src
-
-      console.time("MD")
-      let html = marked(md, { baseUrl: "./" }) 
-      console.timeEnd("MD")
-      console.log("html = ", html)
-
-      let rendered = template({
-        name: M.config.settings.name,
+      const html = marked(md, { baseUrl: "./" }) 
+      document.body.innerHTML = template({
         content: html,
         updated: metadata.updated,
         draft: metadata.draft,
         filename: src,
         title: metadata.title
       }).trim()
-      document.body.innerHTML = rendered
       document.querySelectorAll(".updated").forEach((el) => {
-        let timestamp = parseInt(el.textContent)
-        let ago = timeago.format(timestamp)
-        el.textContent = ago;
+        el.textContent = timeago.format(parseInt(el.textContent))
       })
     })
     </script>
-  </head>
-  <body>
   </body>
 </html>
