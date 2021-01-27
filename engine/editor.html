@@ -24,25 +24,7 @@ import Editor from "https://jspm.dev/@toast-ui/editor"
 import Swal from "https://jspm.dev/sweetalert2"
 import matter from "https://jspm.dev/gray-matter"
 import { fs, git } from "/offbase.js"
-import { builder, build } from "./builder.js"
-const M = {
-  config: {
-    path: {
-      src: {
-        content: "/home/src",
-        assets: "/home/src/assets"
-      },
-      dest: {
-        content: "/home/blog",
-        assets: "/home/blog/assets"
-      }
-    },
-    settings: {
-      name: "fingertwiddler",
-      base: "https://fingertwiddler.github.io/test/blog/"
-    }
-  }
-}
+import { Builder } from "./builder.js"
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
@@ -67,14 +49,17 @@ const updated = async () => {
 }
 const deleted = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await M.git.statusMatrix({ fs, dir: "/" }))
+  const filenames = (await git.statusMatrix({ fs, dir: "/" }))
     .filter((row) => {
       return row[WORKDIR] === 0
     })
   return filenames
 }
 class E {
-  constructor (src) {
+  constructor (o) {
+    this.src = o.src
+    this.config = o.config
+    this.builder = new Builder(o.config)
     this.editor = new Editor({
       frontMatter: true,
       el: document.querySelector('#editor'),
@@ -94,10 +79,10 @@ class E {
           const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          await fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
+          await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => {
             console.log("e", e)
           })
-          await fs.promises.writeFile(M.config.path.src.assets + "/" + hash, bytes).catch((e) => {
+          await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => {
             console.log("e", e)
           })
           callback("assets/" + hash, hash)
@@ -105,7 +90,6 @@ class E {
         }
       }
     });
-    this.src = src;
     if (src) this.fill(decodeURIComponent(src))
   }
   fill (path) {
@@ -130,7 +114,7 @@ class E {
     metadata.draft = true
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(this.src, updatedContent)
-    await builder(M, fs)
+    await this.builder.build(M, fs)
     setTimeout(() => {
       location.href = "/upload"
     }, 1000)
@@ -151,7 +135,7 @@ class E {
       return;
     }
     console.log("updated")
-    await builder(M, fs)
+    await this.builder.build(M, fs)
     setTimeout(() => {
       location.href = "/upload"
     }, 1000)
@@ -205,7 +189,7 @@ class E {
           if (!this.src) {
             //does the title already exist?
             let slug = title.split().join("-").toLowerCase()
-            let f = await fs.promises.stat(M.config.path.src.content + "/" + slug)
+            let f = await fs.promises.stat(`${this.config.SRC}/${slug}`)
             // if already exists, return false
             alert("the file already exists")
             return false;
@@ -239,7 +223,7 @@ class E {
       name = this.src.split("/")[3]
     } else {
       name = slugify(title)
-      this.src = M.config.path.src.content + "/" + name
+      this.src = `${this.config.SRC}/${name}`
       redirect = true;
     }
     //metadata.permalink = name.split().join("-").toLowerCase()
@@ -253,7 +237,7 @@ class E {
 
     let updatedContent = matter.stringify(md, metadata)
 
-    await fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, updatedContent)
+    await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
 
 
     console.log("start build")
@@ -280,16 +264,16 @@ class E {
 
       // delete the corresponding dest files
       let name = this.src.split("/")[2]
-      await fs.promises.unlink(M.config.path.dest.content + "/" + name + "/index.html").catch((e) => { })
-      await fs.promises.rmdir(M.config.path.dest.content + "/" + name).catch((e) => {})
+      await fs.promises.unlink(`${this.config.SRC}/${name}/index.html`).catch((e) => { })
+      await fs.promises.rmdir(`${this.config.SRC}/${name}`).catch((e) => {})
 
       // remove from git too.
       let d = await deleted()
       for(let item of d) {
-        await M.git.remove({ fs, dir: "/home", filepath: item[0] })
+        await git.remove({ fs, dir: "/home", filepath: item[0] })
         console.log("removed", item[0])
       }
-      await builder(M, fs)
+      await this.builder.build(M, fs)
       setTimeout(() => {
         location.href = "/upload"
       }, 1000)
@@ -298,7 +282,19 @@ class E {
 }
 
 var src = new URL(location.href).searchParams.get("src")
-var editor = new E(src)
+var editor = new E({
+  src: src,
+  config: {
+    SRC: "/home/src",
+    DEST: "/home/blog",
+    NAME: "Twiddler",
+    BASE: "https://fingertwiddler.github.io/test/blog/",
+    THEME: {
+      HOME: "/theme/dashboard.hbs",
+      POST: "/theme/post.hbs"
+    }
+  }
+})
 document.querySelector("#delete").addEventListener("click", async (e) => {
   editor.destroy()
 })
