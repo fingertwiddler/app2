@@ -299,18 +299,18 @@ class E {
 }
 
 var src = new URL(location.href).searchParams.get("src")
-var e = new E(src)
+var editor = new E(src)
 document.querySelector("#delete").addEventListener("click", async (e) => {
-  e.destroy()
+  editor.destroy()
 })
 document.querySelector("#unpublish").addEventListener("click", async (e) => {
-  await e.unpublish() 
+  await editor.unpublish() 
 })
 document.querySelector("#upload").addEventListener("click", async (e) => {
-  await e.publish()
+  await editor.publish()
 })
 document.querySelector("#save").addEventListener("click", async (e) => {
-  await e.save()
+  await editor.save()
 });
 
 </script>
