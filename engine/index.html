@@ -230,7 +230,7 @@
           let metadata = parsed.data
           metadata.permalink = filename
           items.push({
-            filename: filename,
+            filename: M.config.path.src.content + "/" + filename,
             meta: metadata
           })
         }
