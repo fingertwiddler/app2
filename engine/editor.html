@@ -252,9 +252,10 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   metadata.updated = Date.now()
 
   let name
+  debugger;
   let redirect = false;
   if (src) {
-    name = src.split("/")[2]
+    name = src.split("/")[3]
   } else {
     name = slugify(title)
     //src = M.config.path.src.content + "/" + name
