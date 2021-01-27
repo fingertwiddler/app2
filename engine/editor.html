@@ -73,19 +73,19 @@ const render = async () => {
     }
   });
 }
-const fill = async (path) => {
-  let str;
-  let str = await fs.promises.readFile(path, "utf8").catch((e) => {
+const fill = (path) => {
+  fs.promises.readFile(path, "utf8").then((str) => {
+    editor.setMarkdown(str)
+    let parsed = matter(str)
+    let md = parsed.content
+    let metadata = parsed.data
+    if (metadata.draft) {
+      document.querySelector("#unpublish").classList.add("hidden")
+      document.querySelector(".draft").classList.remove("hidden")
+    }
+  }).catch((e) => {
     console.log("error", e)
   })
-  if (str) editor.setMarkdown(str)
-  let parsed = matter(str)
-  let md = parsed.content
-  let metadata = parsed.data
-  if (metadata.draft) {
-    document.querySelector("#unpublish").classList.add("hidden")
-    document.querySelector(".draft").classList.remove("hidden")
-  }
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
