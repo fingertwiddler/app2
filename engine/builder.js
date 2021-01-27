@@ -3,8 +3,9 @@ import matter from "https://jspm.dev/gray-matter"
 import marked from "https://jspm.dev/marked"
 import RSS from "https://jspm.dev/rss"
 export class Builder {
-  constructor(config) {
+  constructor(fs, config) {
     this.config = config
+    this.fs = fs
   }
   paginator (filenames, meta, template, CHUNK) {
     let pages = [];
@@ -34,12 +35,12 @@ export class Builder {
     }
     return res
   }
-  async buildPost (fs, key) {
-    let tps = await fs.promises.readFile("/theme/post.hbs", "utf8")
+  async buildPost (key) {
+    let tps = await this.fs.promises.readFile("/theme/post.hbs", "utf8")
     let tpl = Handlebars.compile(tps)
     // Parse the source file
     let contentPath = `${this.config.SRC}/${key}`
-    let content = await fs.promises.readFile(contentPath, "utf8")
+    let content = await this.fs.promises.readFile(contentPath, "utf8")
     let parsed = matter(content)
     let md = parsed.content
     let metadata = parsed.data
@@ -62,8 +63,8 @@ export class Builder {
       let match = /assets\/(.+)$/.exec(image)
       if (match && match.length > 0) {
         let assetPath = `${this.config.SRC}/assets/${match[1]}`
-        let b = await fs.promises.readFile(assetPath)
-        await fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
+        let b = await this.fs.promises.readFile(assetPath)
+        await this.fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
       }
     }
     // Build full HTML page
@@ -77,22 +78,22 @@ export class Builder {
     }).trim()
 
     // Write to the post folder
-    await fs.promises.mkdir(this.config.SRC).catch((e) => { })
-    await fs.promises.mkdir(`${this.config.SRC}/${key}`).catch((e) => { })
-    await fs.promises.writeFile(`${this.config.SRC}/${key}/index.html`, rendered)
+    await this.fs.promises.mkdir(this.config.SRC).catch((e) => { })
+    await this.fs.promises.mkdir(`${this.config.SRC}/${key}`).catch((e) => { })
+    await this.fs.promises.writeFile(`${this.config.SRC}/${key}/index.html`, rendered)
 
     return { html, metadata }
   }
-  async build (fs) {
+  async build () {
     // Create folders in case they're empty
-    await fs.promises.mkdir(this.config.DEST).catch((e) => {})
-    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
-    await fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
+    await this.fs.promises.mkdir(this.config.DEST).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
 
     // Instantiate templates
   //  let tis = await fs.promises.readFile("/app/index.hbs", "utf8")
-    let tds = await fs.promises.readFile(this.config.THEME.HOME, "utf8")
-    let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
+    let tds = await this.fs.promises.readFile(this.config.THEME.HOME, "utf8")
+    let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = {
       post: Handlebars.compile(tps),
       dashboard: Handlebars.compile(tds)
@@ -103,22 +104,22 @@ export class Builder {
 
     let filenames = []
     let meta = {}
-    let src = await fs.promises.readdir(this.config.SRC)
+    let src = await this.fs.promises.readdir(this.config.SRC)
     for(let key of src) {
       if (key === ".git") continue;
       if (key === "assets") {
         // Copy all assets to build folder
-        await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
-        let assets = await fs.promises.readdir(`${this.config.SRC}/assets`)
+        await this.fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+        let assets = await this.fs.promises.readdir(`${this.config.SRC}/assets`)
         for(let file of assets) { 
-          let b = await fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
-          await fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
+          let b = await this.fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
+          await this.fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
         }
       } else {
-        let { html, metadata } = await this.buildPost(M, fs, key) 
+        let { html, metadata } = await this.buildPost(key) 
         meta[key] = metadata
         if (metadata.draft) {
-          await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
+          await this.fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
         } else {
           filenames.push(key)
         }
@@ -131,16 +132,16 @@ export class Builder {
       }
     }
     let xml = feed.xml({ indent: true });
-    await fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
+    await this.fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
     filenames.sort((a, b) => {
       return parseInt(meta[b].updated) - parseInt(meta[a].updated);
     })
-    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
+    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
     let pages = await this.paginator(M, filenames, meta, tpl.dashboard, 3)
     for(let i=0; i<pages.length; i++) {
-      await fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
-      await fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
-      if (i === 0) await fs.promises.writeFile(`${this.config.DEST}/index.html`, pages[i])
+      await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
+      await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
+      if (i === 0) await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, pages[i])
     }
   }
 }

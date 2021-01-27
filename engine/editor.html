@@ -59,7 +59,7 @@ class E {
   constructor (o) {
     this.src = o.src
     this.config = o.config
-    this.builder = new Builder(o.config)
+    this.builder = new Builder(fs, o.config)
     this.editor = new Editor({
       frontMatter: true,
       el: document.querySelector('#editor'),
@@ -114,7 +114,7 @@ class E {
     metadata.draft = true
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(this.src, updatedContent)
-    await this.builder.build(M, fs)
+    await this.builder.build()
     setTimeout(() => {
       location.href = "/upload"
     }, 1000)
@@ -135,7 +135,7 @@ class E {
       return;
     }
     console.log("updated")
-    await this.builder.build(M, fs)
+    await this.builder.build()
     setTimeout(() => {
       location.href = "/upload"
     }, 1000)
@@ -273,7 +273,7 @@ class E {
         await git.remove({ fs, dir: "/home", filepath: item[0] })
         console.log("removed", item[0])
       }
-      await this.builder.build(M, fs)
+      await this.builder.build()
       setTimeout(() => {
         location.href = "/upload"
       }, 1000)
