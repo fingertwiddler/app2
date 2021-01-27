@@ -142,7 +142,7 @@
     </style>
     <script id="template" type="text/x-handlebars-template">
     <nav>
-      <h1><a href="/">{{title}}</a></h1>
+      <h1><a href="/">Blog</a></h1>
       <div class='flexible'></div>
       <div class='menu'>
         <button class='button' id='menu-button'><img src="./menu.png"></button>
@@ -168,94 +168,60 @@
         {{else}}
           <h2 class='title'>{{filename}}</h2>
         {{/if}}
-        {{#if meta.description }}
-          <div class='description'>{{meta.description}}</div>
-        {{/if}}
-        {{#if meta.image }}
-          <div class='image'>
-            <img src="./{{meta.image}}">
-          </div>
-        {{/if}}
+        {{!--
+          {{#if meta.description }}
+            <div class='description'>{{meta.description}}</div>
+          {{/if}}
+          {{#if meta.image }}
+            <div class='image'>
+              <img src="./{{meta.image}}">
+            </div>
+          {{/if}}
+        --}}
       </a>
     {{/each}}
     </div>
-    <footer>
-      {{#each pages}}
-        {{#if current}}
-          <a href="/pages/{{number}}" class='current'>{{number}}</a>
-        {{else}}
-          <a href="/pages/{{number}}">{{number}}</a>
-        {{/if}}
-      {{/each}}
-    </footer>
     </script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/timeago.js/4.0.2/timeago.min.js" integrity="sha512-SVDh1zH5N9ChofSlNAK43lcNS7lWze6DTVx1JCXH1Tmno+0/1jMpdbR8YDgDUfcUrPp1xyE53G42GFrcM0CMVg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/timeago.js/4.0.2/timeago.min.js"></script>
+  </head>
+  <body>
     <script type='module'>
     import Handlebars from "https://jspm.dev/handlebars"
     import matter from "https://jspm.dev/gray-matter"
     import { fs } from "/offbase.js"
-    document.addEventListener("DOMContentLoaded", async () => {
-      console.time("Require")
-      let M = {
-        config: {
-          path: {
-            src: {
-              content: "/home/src",
-              assets: "/home/src/assets"
-            },
-            dest: {
-              content: "/home/blog",
-              assets: "/home/blog/assets"
-            }
-          },
-          settings: {
-            name: "fingertwiddler",
-            base: "https://fingertwiddler.github.io/test/blog/"
-          }
-        }
-      }
-      console.timeEnd("Require")
-      let source = document.querySelector("#template").innerHTML;
-      let template = Handlebars.compile(source);
 
-      // render html
-      let pages = [];
-      let items = [];
-      let filenames = await fs.promises.readdir(M.config.path.src.content)
-      for(let filename of filenames) {
-        if (filename !== "assets") {
-          let content = await fs.promises.readFile(M.config.path.src.content + "/" + filename, "utf8")
+    const PATH = "/home/src"
+    const render = async (template, path) => {
+      let filenames = await fs.promises.readdir(path)
+      let promises = filenames.filter((filename) => {
+        return filename !== "assets"
+      }).map((filename) => {
+        return fs.promises.readFile(path + "/" + filename, "utf8").then((content) => {
           let parsed = matter(content)
           let md = parsed.content
           let metadata = parsed.data
           metadata.permalink = filename
-          items.push({
-            filename: M.config.path.src.content + "/" + filename,
+          return {
+            filename: path + "/" + filename,
             meta: metadata
-          })
-        }
-      }
-      items.sort((a, b) => {
-        return parseInt(b.meta.updated) - parseInt(a.meta.updated);
+          }
+        })
       })
-      let html = template({
-        title: "skögard",
-        items: items,
-        pages: pages
-      })
-      document.body.innerHTML = html
-      document.querySelectorAll(".updated").forEach((el) => {
-        let timestamp = parseInt(el.textContent)
-        let ago = timeago.format(timestamp)
-        el.textContent = ago;
-      })
+      let items = await Promise.all(promises)
+      items.sort((a, b) => parseInt(b.meta.updated) - parseInt(a.meta.updated));
+      return template({ items: items })
+    }
 
-      document.querySelector("#menu-button").addEventListener("click", (e) => {
-        document.querySelector(".menu-items").classList.toggle("collapsed")
-      })
+    document.querySelectorAll(".updated").forEach((el) => {
+      const timestamp = parseInt(el.textContent)
+      el.textContent = timeago.format(timestamp)
     })
+    document.querySelector("#menu-button").addEventListener("click", (e) => {
+      document.querySelector(".menu-items").classList.toggle("collapsed")
+    })
+    const source = document.querySelector("#template").innerHTML;
+    const template = Handlebars.compile(source);
+    document.body.innerHTML = await render(template, PATH)
     </script>
-  </head>
-  <body>
   </body>
 </html>
