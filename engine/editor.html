@@ -25,9 +25,24 @@ import Swal from "https://jspm.dev/sweetalert2"
 import matter from "https://jspm.dev/gray-matter"
 import { fs, git } from "/offbase.js"
 import { builder, build } from "./builder.js"
-var editor
-var M
-var src = new URL(location.href).searchParams.get("src")
+const M = {
+  config: {
+    path: {
+      src: {
+        content: "/home/src",
+        assets: "/home/src/assets"
+      },
+      dest: {
+        content: "/home/blog",
+        assets: "/home/blog/assets"
+      }
+    },
+    settings: {
+      name: "fingertwiddler",
+      base: "https://fingertwiddler.github.io/test/blog/"
+    }
+  }
+}
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
@@ -40,52 +55,6 @@ const slugify = (string) => {
     .replace(/\-\-+/g, '-') // Replace multiple - with single -
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
-}
-const render = async () => {
-  editor = new Editor({
-    frontMatter: true,
-    el: document.querySelector('#editor'),
-    height: '100%',
-    initialEditType: 'markdown',
-    usageStatistics: false,
-    previewStyle: 'vertical',
-    events: {
-      change: () => {
-        document.querySelector("#save").classList.add("enabled")
-      }
-    },
-    hooks: {
-      addImageBlobHook: async (blob, callback) => {
-        let ab = await blob.arrayBuffer()
-        let bytes = new Uint8Array(ab)
-        const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
-        const hashArray = Array.from(new Uint8Array(hashBuffer));
-        const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        await fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
-          console.log("e", e)
-        })
-        await fs.promises.writeFile(M.config.path.src.assets + "/" + hash, bytes).catch((e) => {
-          console.log("e", e)
-        })
-        callback("assets/" + hash, hash)
-        return false;
-      }
-    }
-  });
-}
-const fill = (path) => {
-  fs.promises.readFile(path, "utf8").then((str) => {
-    editor.setMarkdown(str)
-    let parsed = matter(str)
-    let md = parsed.content
-    let metadata = parsed.data
-    if (metadata.draft) {
-      document.querySelector("#unpublish").classList.add("hidden")
-      document.querySelector(".draft").classList.remove("hidden")
-    }
-  }).catch((e) => {
-    console.log("error", e)
-  })
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
@@ -104,15 +73,214 @@ const deleted = async () => {
     })
   return filenames
 }
-document.querySelector("#delete").addEventListener("click", async (e) => {
-  if (src) {
+class E {
+  constructor (src) {
+    this.editor = new Editor({
+      frontMatter: true,
+      el: document.querySelector('#editor'),
+      height: '100%',
+      initialEditType: 'markdown',
+      usageStatistics: false,
+      previewStyle: 'vertical',
+      events: {
+        change: () => {
+          document.querySelector("#save").classList.add("enabled")
+        }
+      },
+      hooks: {
+        addImageBlobHook: async (blob, callback) => {
+          let ab = await blob.arrayBuffer()
+          let bytes = new Uint8Array(ab)
+          const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          await fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
+            console.log("e", e)
+          })
+          await fs.promises.writeFile(M.config.path.src.assets + "/" + hash, bytes).catch((e) => {
+            console.log("e", e)
+          })
+          callback("assets/" + hash, hash)
+          return false;
+        }
+      }
+    });
+    this.src = src;
+    if (src) this.fill(decodeURIComponent(src))
+  }
+  fill (path) {
+    fs.promises.readFile(path, "utf8").then((str) => {
+      this.editor.setMarkdown(str)
+      let parsed = matter(str)
+      let md = parsed.content
+      let metadata = parsed.data
+      if (metadata.draft) {
+        document.querySelector("#unpublish").classList.add("hidden")
+        document.querySelector(".draft").classList.remove("hidden")
+      }
+    }).catch((e) => {
+      console.log("error", e)
+    })
+  }
+  async unpublish() {
+    let raw = this.editor.getMarkdown()
+    let parsed = matter(raw)
+    let md = parsed.content
+    let metadata = parsed.data
+    metadata.draft = true
+    let updatedContent = matter.stringify(md, metadata)
+    await fs.promises.writeFile(this.src, updatedContent)
+    await builder(M, fs)
+    setTimeout(() => {
+      location.href = "/upload"
+    }, 1000)
+  }
+  async publish() {
+    let raw = this.editor.getMarkdown()
+    let parsed = matter(raw)
+    let md = parsed.content
+    let metadata = parsed.data
+    metadata.draft = false;
+    console.log("metadata = ", metadata)
+    let updatedContent = matter.stringify(md, metadata)
+    await fs.promises.writeFile(this.src, updatedContent)
+    let isupdated = await updated()
+    if (!isupdated) {
+      console.log("no update")
+      alert("no update")
+      return;
+    }
+    console.log("updated")
+    await builder(M, fs)
+    setTimeout(() => {
+      location.href = "/upload"
+    }, 1000)
+  }
+  async save() {
+    let raw = this.editor.getMarkdown()
+    let parsed = matter(raw)
+    let md = parsed.content
+    let metadata = parsed.data
+    let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
+    let images = []
+    for (let match of matches) {
+      images.push(match[1])
+    }
+    let imageTags = images.map((image, i) => {
+      if (i === 0) {
+        return "<img class='selected' src='" + image + "'>"
+      } else {
+        return "<img src='" + image + "'>"
+      }
+    }).join("")
+
+    let desc = (metadata.description ? metadata.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
+    let {title, description, image} = await Swal.fire({
+      title: 'Save',
+      html: `<form class='publish-form'>
+  <input class='title' type='text' placeholder='enter title' value='${metadata.title ? metadata.title : ""}'>
+  <textarea class='description'>${desc}</textarea>
+  <div class='images'>${imageTags}</div>
+  </form>`,
+      confirmButtonText: 'Save',
+      didOpen: (el) => {
+        el.querySelector(".images").addEventListener("click", (e) => {
+          document.querySelectorAll(".images img").forEach((el2) => {
+            el2.classList.remove("selected")
+          })
+          if (e.target.getAttribute("src")) {
+            e.target.classList.toggle("selected")
+          }
+        })
+      },
+      preConfirm: async () => {
+        let image = document.querySelector(".publish-form .images img.selected")
+        let title = document.querySelector(".publish-form .title").value
+        if (!title || title.length === 0) {
+          alert("please enter title")
+          return false;
+        }
+        try {
+          // the first time creating a file,
+          if (!this.src) {
+            //does the title already exist?
+            let slug = title.split().join("-").toLowerCase()
+            let f = await fs.promises.stat(M.config.path.src.content + "/" + slug)
+            // if already exists, return false
+            alert("the file already exists")
+            return false;
+          }
+        } catch (e) {
+        }
+        return [
+          document.querySelector(".publish-form .title").value,
+          document.querySelector(".publish-form .description").value,
+          (image ? image.getAttribute("src") : null)
+        ]
+      }
+    }).then((res) => {
+      return {
+        title: res.value[0],
+        description: res.value[1],
+        image: res.value[2]
+      }
+    })
+    console.log("title", title)
+    console.log("description", description)
+    console.log("image", image)
+    metadata.title = title
+    metadata.description = description
+    metadata.image = image
+    metadata.updated = Date.now()
+
+    let name
+    let redirect = false;
+    if (this.src) {
+      name = this.src.split("/")[3]
+    } else {
+      name = slugify(title)
+      this.src = M.config.path.src.content + "/" + name
+      redirect = true;
+    }
+    //metadata.permalink = name.split().join("-").toLowerCase()
+    metadata.permalink = name
+
+    // if draft attribute does not exist, set it to true
+    // otherwise, ignore
+    if (!metadata.hasOwnProperty("draft")) {
+      metadata.draft = true
+    }
+
+    let updatedContent = matter.stringify(md, metadata)
+
+    await fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, updatedContent)
+
+
+    //await builder(fs)
+    console.log("start build")
+    await build(M, fs, metadata.permalink)
+    console.log("built")
+
+    document.querySelector("#save").classList.remove("enabled")
+    if (redirect) {
+      setTimeout(() => {
+        location.href = "./editor?src=" + this.src
+      }, 1000)
+    } else {
+      this.editor.setMarkdown(updatedContent)
+    }
+  }
+  async destroy() {
+    if (!this.src) {
+      return;
+    }
     let sure = confirm("are you sure?")
     if (sure) {
       // delete the file
-      await fs.promises.unlink(src)
+      await fs.promises.unlink(this.src)
 
       // delete the corresponding dest files
-      let name = src.split("/")[2]
+      let name = this.src.split("/")[2]
       await fs.promises.unlink(M.config.path.dest.content + "/" + name + "/index.html").catch((e) => { })
       await fs.promises.rmdir(M.config.path.dest.content + "/" + name).catch((e) => {})
 
@@ -128,190 +296,22 @@ document.querySelector("#delete").addEventListener("click", async (e) => {
       }, 1000)
     }
   }
+}
+
+var src = new URL(location.href).searchParams.get("src")
+var e = new E(src)
+document.querySelector("#delete").addEventListener("click", async (e) => {
+  e.destroy()
 })
 document.querySelector("#unpublish").addEventListener("click", async (e) => {
-  let content = editor.getMarkdown()
-  let parsed = matter(content)
-  let md = parsed.content
-  let metadata = parsed.data
-  metadata.draft = true
-  console.log("metadata = ", metadata)
-  content = matter.stringify(md, metadata)
-  await fs.promises.writeFile(src, content)
-  await builder(M, fs)
-  setTimeout(() => {
-    location.href = "/upload"
-  }, 1000)
+  await e.unpublish() 
 })
 document.querySelector("#upload").addEventListener("click", async (e) => {
-  // Get content
-  let content = editor.getMarkdown()
-  let parsed = matter(content)
-  let md = parsed.content
-  let metadata = parsed.data
-  metadata.draft = false;
-  console.log("metadata = ", metadata)
-  content = matter.stringify(md, metadata)
-  await fs.promises.writeFile(src, content)
-
-  let isupdated = await updated()
-  if (!isupdated) {
-    console.log("no update")
-    alert("no update")
-    return;
-  }
-  console.log("updated")
-
-  await builder(M, fs)
-  location.href = "/upload"
+  await e.publish()
 })
 document.querySelector("#save").addEventListener("click", async (e) => {
-  let content = editor.getMarkdown()
-
-  let parsed = matter(content)
-  let md = parsed.content
-  let metadata = parsed.data
-
-  console.log("metadata = ", metadata)
-  // title
-  // description
-  // image preview
-  // timestamp
-
-  let matches = content.matchAll(/!\[.*?\]\((.*?)\)/g)
-  let images = []
-  for (let match of matches) {
-    images.push(match[1])
-  }
-  let imageTags = images.map((image, i) => {
-    if (i === 0) {
-      return "<img class='selected' src='" + image + "'>"
-    } else {
-      return "<img src='" + image + "'>"
-    }
-  }).join("")
-
-  let desc = (metadata.description ? metadata.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
-  let {title, description, image} = await Swal.fire({
-    title: 'Save',
-    html: `<form class='publish-form'>
-<input class='title' type='text' placeholder='enter title' value='${metadata.title ? metadata.title : ""}'>
-<textarea class='description'>${desc}</textarea>
-<div class='images'>${imageTags}</div>
-</form>`,
-    confirmButtonText: 'Save',
-    didOpen: (el) => {
-      el.querySelector(".images").addEventListener("click", (e) => {
-        document.querySelectorAll(".images img").forEach((el2) => {
-          el2.classList.remove("selected")
-        })
-        if (e.target.getAttribute("src")) {
-          e.target.classList.toggle("selected")
-        }
-      })
-    },
-    preConfirm: async () => {
-      let image = document.querySelector(".publish-form .images img.selected")
-      let title = document.querySelector(".publish-form .title").value
-      if (!title || title.length === 0) {
-        alert("please enter title")
-        return false;
-      }
-      try {
-        // the first time creating a file,
-        if (!src) {
-          //does the title already exist?
-          let slug = title.split().join("-").toLowerCase()
-          let f = await fs.promises.stat(M.config.path.src.content + "/" + slug)
-          // if already exists, return false
-          alert("the file already exists")
-          return false;
-        }
-      } catch (e) {
-      }
-      return [
-        document.querySelector(".publish-form .title").value,
-        document.querySelector(".publish-form .description").value,
-        (image ? image.getAttribute("src") : null)
-      ]
-    }
-  }).then((res) => {
-    return {
-      title: res.value[0],
-      description: res.value[1],
-      image: res.value[2]
-    }
-  })
-  console.log("title", title)
-  console.log("description", description)
-  console.log("image", image)
-  metadata.title = title
-  metadata.description = description
-  metadata.image = image
-  metadata.updated = Date.now()
-
-  let name
-  let redirect = false;
-  if (src) {
-    name = src.split("/")[3]
-  } else {
-    name = slugify(title)
-    src = M.config.path.src.content + "/" + name
-    //src = name
-    redirect = true;
-  }
-  //metadata.permalink = name.split().join("-").toLowerCase()
-  metadata.permalink = name
-
-  // if draft attribute does not exist, set it to true
-  // otherwise, ignore
-  if (!metadata.hasOwnProperty("draft")) {
-    metadata.draft = true
-  }
-
-  content = matter.stringify(md, metadata)
-
-  await fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, content)
-
-
-  //await builder(fs)
-  console.log("start build")
-  await build(M, fs, metadata.permalink)
-  console.log("built")
-
-  document.querySelector("#save").classList.remove("enabled")
-  if (redirect) {
-    setTimeout(() => {
-      location.href = "./editor?src=" + src
-    }, 1000)
-  } else {
-    editor.setMarkdown(content)
-  }
+  await e.save()
 });
-
-
-(async () => {
-  M = {
-    config: {
-      path: {
-        src: {
-          content: "/home/src",
-          assets: "/home/src/assets"
-        },
-        dest: {
-          content: "/home/blog",
-          assets: "/home/blog/assets"
-        }
-      },
-      settings: {
-        name: "fingertwiddler",
-        base: "https://fingertwiddler.github.io/test/blog/"
-      }
-    }
-  }
-  render()
-  if (src) fill(decodeURIComponent(src))
-})();
 
 </script>
 </body>
