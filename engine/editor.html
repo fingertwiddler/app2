@@ -256,9 +256,8 @@ class E {
     await fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, updatedContent)
 
 
-    //await builder(fs)
     console.log("start build")
-    await build(M, fs, metadata.permalink)
+//    await build(M, fs, metadata.permalink)
     console.log("built")
 
     document.querySelector("#save").classList.remove("enabled")

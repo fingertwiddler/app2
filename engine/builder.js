@@ -66,7 +66,6 @@ const buildPost = async (M, fs, key) => {
   }
 
   console.log("metadata = ", metadata)
-  debugger;
   // Build full HTML page
   let rendered = tpl({
     base: M.config.settings.base,
