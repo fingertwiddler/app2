@@ -221,7 +221,9 @@
     })
     const source = document.querySelector("#template").innerHTML;
     const template = Handlebars.compile(source);
-    document.body.innerHTML = await render(template, PATH)
+    render(template, PATH).then((content) => {
+      document.body.innerHTML = content
+    })
     </script>
   </body>
 </html>
