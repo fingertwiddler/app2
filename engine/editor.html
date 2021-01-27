@@ -43,6 +43,7 @@ const slugify = (string) => {
     .replace(/-+$/, '') // Trim - from end of text
 }
 const render = async (path) => {
+  console.time("render")
   console.time("editor")
   editor = new Editor({
     frontMatter: true,
@@ -99,6 +100,7 @@ const render = async (path) => {
     editor.setMarkdown(str)
     console.timeEnd("setMD")
   }
+  console.timeEnd("render")
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
