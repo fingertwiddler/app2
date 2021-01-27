@@ -258,8 +258,8 @@ document.querySelector("#save").addEventListener("click", async (e) => {
     name = src.split("/")[3]
   } else {
     name = slugify(title)
-    //src = M.config.path.src.content + "/" + name
-    src = name
+    src = M.config.path.src.content + "/" + name
+    //src = name
     redirect = true;
   }
   //metadata.permalink = name.split().join("-").toLowerCase()
@@ -284,7 +284,7 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   document.querySelector("#save").classList.remove("enabled")
 //  if (redirect) {
     setTimeout(() => {
-      location.href = "./editor?src=" + M.config.path.src.content + "/" + src
+      location.href = "./editor?src=" + src
     }, 1000)
 //  }
 });
