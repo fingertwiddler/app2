@@ -139,7 +139,7 @@
       let template = Handlebars.compile(source);
 
       console.time("READ")
-      let content = await fs.promises.readFile(M.config.path.src.content + "/" + src, "utf8")
+      let content = await fs.promises.readFile(src, "utf8")
       console.timeEnd("READ")
       console.time("Parse")
       let parsed = matter(content)
