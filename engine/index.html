@@ -9,7 +9,9 @@
       nav {
         display: flex;
         align-items: flex-start;
-        padding: 50px 20px;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 50px 0px;
       }
       nav h1 {
         font-size: 40px;
@@ -19,6 +21,10 @@
       nav h1 a {
         text-decoration: none;
         color: rgba(0,0,0,0.8);
+        font-family: Georgia;
+        font-style: italic;
+        letter-spacing: -2px;
+        text-transform: lowercase;
       }
       .hidden {
         display: none;
@@ -52,31 +58,14 @@
         font-size: 20px;
         color: rgba(0,0,0,0.7);
         font-family: Sans-serif;
-        padding: 20px 10px;
-        border-bottom: 1px solid rgba(230, 230, 230, 1);
-      }
-      .row .image {
-        height: 300px;
-        overflow: hidden;
-        margin-top: 12px;
-      }
-      .row .image img {
-        width: 100%;
+        padding: 10px;
       }
       .row .title {
-        font-size: 30px;
-        line-height: 40px;
+        font-size: 20px;
+        line-height: 20px;
         margin: 0;
       }
-      .row .description {
-        font-style: normal;
-        font-family: sans-serif;
-        font-size: 16px;
-        line-height: 20px;
-        color: rgba(117, 117, 117, 1);
-        padding-top: 4px;
-      }
-      .row .header {
+      .row .footer {
         font-style: normal;
         font-family: sans-serif;
         font-size: 14px;
@@ -156,18 +145,18 @@
     <div class='container'>
     {{#each items}}
       <a class='row' href="./post?src={{filename}}">
-        <div class='header'>
+        {{#if meta.title }}
+          <h2 class='title'>{{meta.title}}</h2>
+        {{else}}
+          <h2 class='title'>{{filename}}</h2>
+        {{/if}}
+        <div class='footer'>
           <div class='updated'>{{meta.updated}}</div>
           <div class='flexible'></div>
           {{#if meta.draft}}
           <div class='badge'>draft</div>
           {{/if}}
         </div>
-        {{#if meta.title }}
-          <h2 class='title'>{{meta.title}}</h2>
-        {{else}}
-          <h2 class='title'>{{filename}}</h2>
-        {{/if}}
         {{!--
           {{#if meta.description }}
             <div class='description'>{{meta.description}}</div>
