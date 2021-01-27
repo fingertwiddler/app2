@@ -2,7 +2,6 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<base href="./">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.0/codemirror.min.css" />
 <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
 <link rel='stylesheet' href="./style.css">
@@ -28,7 +27,7 @@ import { fs, git } from "/offbase.js"
 import { builder, build } from "./builder.js"
 var editor
 var M
-var src
+var src = new URL(location.href).searchParams.get("src")
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
@@ -42,9 +41,7 @@ const slugify = (string) => {
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
 }
-const render = async (path) => {
-  console.time("render")
-  console.time("editor")
+const render = async () => {
   editor = new Editor({
     frontMatter: true,
     el: document.querySelector('#editor'),
@@ -64,7 +61,6 @@ const render = async (path) => {
         const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-        console.log("config = ", M.config.path)
         await fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
           console.log("e", e)
         })
@@ -76,31 +72,20 @@ const render = async (path) => {
       }
     }
   });
-  console.timeEnd("editor")
-  if (path) {
-    let str;
-    try {
-      console.time("readFile")
-      str = await fs.promises.readFile(path, "utf8")
-      console.timeEnd("readFile")
-      console.time("md")
-      let parsed = matter(str)
-      console.timeEnd("md")
-      let md = parsed.content
-      let metadata = parsed.data
-      if (metadata.draft) {
-        document.querySelector("#unpublish").classList.add("hidden")
-        document.querySelector(".draft").classList.remove("hidden")
-      }
-
-    } catch (e) {
-      console.log("error", e)
-    }
-    console.time("setMD")
-    editor.setMarkdown(str)
-    console.timeEnd("setMD")
+}
+const fill = async (path) => {
+  let str;
+  let str = await fs.promises.readFile(path, "utf8").catch((e) => {
+    console.log("error", e)
+  })
+  if (str) editor.setMarkdown(str)
+  let parsed = matter(str)
+  let md = parsed.content
+  let metadata = parsed.data
+  if (metadata.draft) {
+    document.querySelector("#unpublish").classList.add("hidden")
+    document.querySelector(".draft").classList.remove("hidden")
   }
-  console.timeEnd("render")
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
@@ -123,10 +108,15 @@ document.querySelector("#delete").addEventListener("click", async (e) => {
   if (src) {
     let sure = confirm("are you sure?")
     if (sure) {
-      let name = src.split("/")[2]
+      // delete the file
       await fs.promises.unlink(src)
+
+      // delete the corresponding dest files
+      let name = src.split("/")[2]
       await fs.promises.unlink(M.config.path.dest.content + "/" + name + "/index.html").catch((e) => { })
       await fs.promises.rmdir(M.config.path.dest.content + "/" + name).catch((e) => {})
+
+      // remove from git too.
       let d = await deleted()
       for(let item of d) {
         await M.git.remove({ fs, dir: "/home", filepath: item[0] })
@@ -290,11 +280,13 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   console.log("built")
 
   document.querySelector("#save").classList.remove("enabled")
-//  if (redirect) {
+  if (redirect) {
     setTimeout(() => {
       location.href = "./editor?src=" + src
     }, 1000)
-//  }
+  } else {
+    editor.setMarkdown(content)
+  }
 });
 
 
@@ -317,12 +309,8 @@ document.querySelector("#save").addEventListener("click", async (e) => {
       }
     }
   }
-  src = new URL(location.href).searchParams.get("src")
-  if (src) {
-    render(decodeURIComponent(src))
-  } else {
-    render()
-  }
+  render()
+  if (src) fill(decodeURIComponent(src))
 })();
 
 </script>
