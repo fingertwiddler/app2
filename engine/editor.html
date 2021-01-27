@@ -284,7 +284,7 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   document.querySelector("#save").classList.remove("enabled")
 //  if (redirect) {
     setTimeout(() => {
-      location.href = "./editor?src=" + src
+      location.href = "./editor?src=" + M.config.path.src.content + "/" + src
     }, 1000)
 //  }
 });
