@@ -30,12 +30,12 @@ const paginator = (M, filenames, meta, template, CHUNK) => {
   }
   return res
 }
-const buildPost = async (M, C, key) => {
-  let tps = await C.fs.promises.readFile("/post.hbs", "utf8")
+const buildPost = async (M, fs, key) => {
+  let tps = await fs.promises.readFile("/theme/post.hbs", "utf8")
   let tpl = Handlebars.compile(tps)
   // Parse the source file
   let contentPath = M.config.path.src.content + "/" + key
-  let content = await M.fs.promises.readFile(contentPath, "utf8")
+  let content = await fs.promises.readFile(contentPath, "utf8")
   let parsed = matter(content)
   let md = parsed.content
   let metadata = parsed.data
@@ -60,8 +60,8 @@ const buildPost = async (M, C, key) => {
     let match = /assets\/(.+)$/.exec(image)
     if (match && match.length > 0) {
       let assetPath = M.config.path.src.assets + "/" + match[1]
-      let b = await M.fs.promises.readFile(assetPath)
-      await M.fs.promises.writeFile(M.config.path.dest.assets + "/" + match[1], b)
+      let b = await fs.promises.readFile(assetPath)
+      await fs.promises.writeFile(M.config.path.dest.assets + "/" + match[1], b)
     }
   }
 
@@ -80,32 +80,32 @@ const buildPost = async (M, C, key) => {
   console.log("rendered html = ", rendered)
 
   // Write to the post folder
-  await M.fs.promises.mkdir(M.config.path.dest.content).catch((e) => { })
-  await M.fs.promises.mkdir(M.config.path.dest.content + "/" + key).catch((e) => {
+  await fs.promises.mkdir(M.config.path.dest.content).catch((e) => { })
+  await fs.promises.mkdir(M.config.path.dest.content + "/" + key).catch((e) => {
     console.log("exists")
   })
-  await M.fs.promises.writeFile(M.config.path.dest.content + "/" + key + "/index.html", rendered)
+  await fs.promises.writeFile(M.config.path.dest.content + "/" + key + "/index.html", rendered)
 
   return { html, metadata }
 }
-export const build = async (M, C, src) => {
+export const build = async (M, fs, src) => {
   // Create folders in case they're empty
-  await M.fs.promises.mkdir(M.config.path.dest.content).catch((e) => {})
-  await M.fs.promises.mkdir(M.config.path.dest.content + "/pages").catch((e) => {})
-  await M.fs.promises.mkdir(M.config.path.dest.assets).catch((e) => {})
-  let { html, metadata } = await buildPost(M, C, src) 
+  await fs.promises.mkdir(M.config.path.dest.content).catch((e) => {})
+  await fs.promises.mkdir(M.config.path.dest.content + "/pages").catch((e) => {})
+  await fs.promises.mkdir(M.config.path.dest.assets).catch((e) => {})
+  let { html, metadata } = await buildPost(M, fs, src) 
 
 }
-export const builder = async (M, C) => {
+export const builder = async (M, fs) => {
   // Create folders in case they're empty
-  await M.fs.promises.mkdir(M.config.path.dest.content).catch((e) => {})
-  await M.fs.promises.mkdir(M.config.path.dest.content + "/pages").catch((e) => {})
-  await M.fs.promises.mkdir(M.config.path.dest.assets).catch((e) => {})
+  await fs.promises.mkdir(M.config.path.dest.content).catch((e) => {})
+  await fs.promises.mkdir(M.config.path.dest.content + "/pages").catch((e) => {})
+  await fs.promises.mkdir(M.config.path.dest.assets).catch((e) => {})
 
   // Instantiate templates
 //  let tis = await fs.promises.readFile("/app/index.hbs", "utf8")
-  let tds = await C.fs.promises.readFile("/dashboard.hbs", "utf8")
-  let tps = await C.fs.promises.readFile("/post.hbs", "utf8")
+  let tds = await fs.promises.readFile("/theme/dashboard.hbs", "utf8")
+  let tps = await fs.promises.readFile("/theme/post.hbs", "utf8")
   let tpl = {
     post: Handlebars.compile(tps),
     dashboard: Handlebars.compile(tds)
@@ -116,28 +116,28 @@ export const builder = async (M, C) => {
 
   let filenames = []
   let meta = {}
-  let src = await M.fs.promises.readdir(M.config.path.src.content)
+  let src = await fs.promises.readdir(M.config.path.src.content)
   for(let key of src) {
     if (key === ".git") continue;
     if (key === "assets") {
       // Copy all assets to build folder
       try {
-        let docassets = await M.fs.promises.stat(M.config.path.dest.assets)
+        let docassets = await fs.promises.stat(M.config.path.dest.assets)
       } catch (e) {
-        await M.fs.promises.mkdir(M.config.path.dest.assets)
+        await fs.promises.mkdir(M.config.path.dest.assets)
       }
-      let assets = await M.fs.promises.readdir(M.config.path.src.assets)
+      let assets = await fs.promises.readdir(M.config.path.src.assets)
       for(let file of assets) { 
-        let b = await M.fs.promises.readFile(M.config.path.src.assets + "/" + file)
-        await M.fs.promises.writeFile(M.config.path.dest.assets + "/" + file, b)
+        let b = await fs.promises.readFile(M.config.path.src.assets + "/" + file)
+        await fs.promises.writeFile(M.config.path.dest.assets + "/" + file, b)
       }
     } else {
 
-      let { html, metadata } = await buildPost(M, C, key) 
+      let { html, metadata } = await buildPost(M, fs, key) 
       meta[key] = metadata
 
       if (metadata.draft) {
-        await M.fs.promises.unlink(M.config.path.dest.content + "/" + key + "/index.html")
+        await fs.promises.unlink(M.config.path.dest.content + "/" + key + "/index.html")
       } else {
         filenames.push(key)
       }
@@ -154,7 +154,7 @@ export const builder = async (M, C) => {
   }
 
   let xml = feed.xml({ indent: true });
-  await M.fs.promises.writeFile(M.config.path.dest.content + "/rss.xml", xml)
+  await fs.promises.writeFile(M.config.path.dest.content + "/rss.xml", xml)
 
   // build index.html
   filenames.sort((a, b) => {
@@ -162,19 +162,19 @@ export const builder = async (M, C) => {
   })
 
   try {
-    let docassets = await M.fs.promises.stat(M.config.path.dest.content + "/pages")
+    let docassets = await fs.promises.stat(M.config.path.dest.content + "/pages")
   } catch (e) {
-    await M.fs.promises.mkdir(M.config.path.dest.content + "/pages")
+    await fs.promises.mkdir(M.config.path.dest.content + "/pages")
   }
 
   let pages = await paginator(M, filenames, meta, tpl.dashboard, 3)
   for(let i=0; i<pages.length; i++) {
-    await M.fs.promises.mkdir(M.config.path.dest.content + "/pages/" + i).catch((e) => {
+    await fs.promises.mkdir(M.config.path.dest.content + "/pages/" + i).catch((e) => {
       console.log("exists")
     })
-    await M.fs.promises.writeFile(M.config.path.dest.content + "/pages/" + i + "/index.html", pages[i])
+    await fs.promises.writeFile(M.config.path.dest.content + "/pages/" + i + "/index.html", pages[i])
     if (i === 0) {
-      await M.fs.promises.writeFile(M.config.path.dest.content + "/index.html", pages[i])
+      await fs.promises.writeFile(M.config.path.dest.content + "/index.html", pages[i])
     }
   }
 }

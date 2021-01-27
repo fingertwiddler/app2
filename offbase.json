@@ -9,7 +9,7 @@
   },
   "routes": [{
     "from": "/assets/:path",
-    "to": "/src/assets/{{path}}"
+    "to": "/home/src/assets/{{path}}"
   }, {
     "from": "/:name.js",
     "to": "/app/engine/{{name}}.js",

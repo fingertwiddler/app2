@@ -193,27 +193,27 @@
     <script type='module'>
     import Handlebars from "https://jspm.dev/handlebars"
     import matter from "https://jspm.dev/gray-matter"
-    import { require } from "/offbase.js"
+    import { fs } from "/offbase.js"
     document.addEventListener("DOMContentLoaded", async () => {
       console.time("Require")
-      let M = await require("~")
-      M.config = {
-        path: {
-          src: {
-            content: "/src",
-            assets: "/src/assets"
+      let M = {
+        config: {
+          path: {
+            src: {
+              content: "/src",
+              assets: "/src/assets"
+            },
+            dest: {
+              content: "/blog",
+              assets: "/blog/assets"
+            }
           },
-          dest: {
-            content: "/blog",
-            assets: "/blog/assets"
+          settings: {
+            name: "fingertwiddler",
+            base: "https://fingertwiddler.github.io/test/blog/"
           }
-        },
-        settings: {
-          name: "fingertwiddler",
-          base: "https://fingertwiddler.github.io/test/blog/"
         }
       }
-      let C = await require("theme")
       console.timeEnd("Require")
       let source = document.querySelector("#template").innerHTML;
       let template = Handlebars.compile(source);
@@ -221,11 +221,10 @@
       // render html
       let pages = [];
       let items = [];
-      console.log("M.config = ", M.config)
-      let filenames = await M.fs.promises.readdir(M.config.path.src.content)
+      let filenames = await fs.promises.readdir(M.config.path.src.content)
       for(let filename of filenames) {
         if (filename !== "assets") {
-          let content = await M.fs.promises.readFile(M.config.path.src.content + "/" + filename, "utf8")
+          let content = await fs.promises.readFile(M.config.path.src.content + "/" + filename, "utf8")
           let parsed = matter(content)
           let md = parsed.content
           let metadata = parsed.data

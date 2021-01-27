@@ -24,10 +24,10 @@
 import Editor from "https://jspm.dev/@toast-ui/editor"
 import Swal from "https://jspm.dev/sweetalert2"
 import matter from "https://jspm.dev/gray-matter"
-import { require } from "/offbase.js"
+import { fs, git } from "/offbase.js"
 import { builder, build } from "./builder.js"
 var editor
-var M, C
+var M
 var src
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
@@ -63,10 +63,10 @@ const render = async (path) => {
         const hashArray = Array.from(new Uint8Array(hashBuffer));
         const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
         console.log("config = ", M.config.path)
-        await M.fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
+        await fs.promises.mkdir(M.config.path.src.assets).catch((e) => {
           console.log("e", e)
         })
-        await M.fs.promises.writeFile(M.config.path.src.assets + "/" + hash, bytes).catch((e) => {
+        await fs.promises.writeFile(M.config.path.src.assets + "/" + hash, bytes).catch((e) => {
           console.log("e", e)
         })
         callback("assets/" + hash, hash)
@@ -77,7 +77,7 @@ const render = async (path) => {
   if (path) {
     let str;
     try {
-      str = await M.fs.promises.readFile(path, "utf8")
+      str = await fs.promises.readFile(path, "utf8")
 
       let parsed = matter(str)
       let md = parsed.content
@@ -95,7 +95,7 @@ const render = async (path) => {
 }
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await M.git.statusMatrix({ fs: M.fs, dir: "/" }))
+  const filenames = (await git.statusMatrix({ fs, dir: "/" }))
     .filter((row) => {
       return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1)
     })
@@ -104,7 +104,7 @@ const updated = async () => {
 }
 const deleted = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await M.git.statusMatrix({ fs: M.fs, dir: "/" }))
+  const filenames = (await M.git.statusMatrix({ fs, dir: "/" }))
     .filter((row) => {
       return row[WORKDIR] === 0
     })
@@ -115,15 +115,15 @@ document.querySelector("#delete").addEventListener("click", async (e) => {
     let sure = confirm("are you sure?")
     if (sure) {
       let name = src.split("/")[2]
-      await M.fs.promises.unlink(src)
-      await M.fs.promises.unlink(M.config.path.dest.content + "/" + name + "/index.html").catch((e) => { })
-      await M.fs.promises.rmdir(M.config.path.dest.content + "/" + name).catch((e) => {})
+      await fs.promises.unlink(src)
+      await fs.promises.unlink(M.config.path.dest.content + "/" + name + "/index.html").catch((e) => { })
+      await fs.promises.rmdir(M.config.path.dest.content + "/" + name).catch((e) => {})
       let d = await deleted()
       for(let item of d) {
-        await M.git.remove({ fs: M.fs, dir: "/", filepath: item[0] })
+        await M.git.remove({ fs, dir: "/home", filepath: item[0] })
         console.log("removed", item[0])
       }
-      await builder(M, C)
+      await builder(M, fs)
       setTimeout(() => {
         location.href = "/upload"
       }, 1000)
@@ -138,8 +138,8 @@ document.querySelector("#unpublish").addEventListener("click", async (e) => {
   metadata.draft = true
   console.log("metadata = ", metadata)
   content = matter.stringify(md, metadata)
-  await M.fs.promises.writeFile(src, content)
-  await builder(M, C)
+  await fs.promises.writeFile(src, content)
+  await builder(M, fs)
   setTimeout(() => {
     location.href = "/upload"
   }, 1000)
@@ -153,7 +153,7 @@ document.querySelector("#upload").addEventListener("click", async (e) => {
   metadata.draft = false;
   console.log("metadata = ", metadata)
   content = matter.stringify(md, metadata)
-  await M.fs.promises.writeFile(src, content)
+  await fs.promises.writeFile(src, content)
 
   let isupdated = await updated()
   if (!isupdated) {
@@ -163,7 +163,7 @@ document.querySelector("#upload").addEventListener("click", async (e) => {
   }
   console.log("updated")
 
-  await builder(M, C)
+  await builder(M, fs)
   location.href = "/upload"
 })
 document.querySelector("#save").addEventListener("click", async (e) => {
@@ -223,7 +223,7 @@ document.querySelector("#save").addEventListener("click", async (e) => {
         if (!src) {
           //does the title already exist?
           let slug = title.split().join("-").toLowerCase()
-          let f = await M.fs.promises.stat(M.config.path.src.content + "/" + slug)
+          let f = await fs.promises.stat(M.config.path.src.content + "/" + slug)
           // if already exists, return false
           alert("the file already exists")
           return false;
@@ -271,12 +271,12 @@ document.querySelector("#save").addEventListener("click", async (e) => {
 
   content = matter.stringify(md, metadata)
 
-  await M.fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, content)
+  await fs.promises.writeFile(M.config.path.src.content + "/" + metadata.permalink, content)
 
 
   //await builder(fs)
   console.log("start build")
-  await build(M, C, metadata.permalink)
+  await build(M, fs, metadata.permalink)
   console.log("built")
 
   document.querySelector("#save").classList.remove("enabled")
@@ -289,26 +289,24 @@ document.querySelector("#save").addEventListener("click", async (e) => {
 
 
 (async () => {
-  console.time("Require")
-  M = await require("~")
-  M.config = {
-    path: {
-      src: {
-        content: "/src",
-        assets: "/src/assets"
+  M = {
+    config: {
+      path: {
+        src: {
+          content: "/src",
+          assets: "/src/assets"
+        },
+        dest: {
+          content: "/blog",
+          assets: "/blog/assets"
+        }
       },
-      dest: {
-        content: "/blog",
-        assets: "/blog/assets"
+      settings: {
+        name: "fingertwiddler",
+        base: "https://fingertwiddler.github.io/test/blog/"
       }
-    },
-    settings: {
-      name: "fingertwiddler",
-      base: "https://fingertwiddler.github.io/test/blog/"
     }
   }
-  C = await require("theme")
-  console.timeEnd("Require")
   src = new URL(location.href).searchParams.get("src")
   if (src) {
     render(decodeURIComponent(src))
