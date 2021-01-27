@@ -137,7 +137,7 @@ export class Builder {
       return parseInt(meta[b].updated) - parseInt(meta[a].updated);
     })
     await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
-    let pages = await this.paginator(M, filenames, meta, tpl.dashboard, 3)
+    let pages = await this.paginator(filenames, meta, tpl.dashboard, 3)
     for(let i=0; i<pages.length; i++) {
       await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
       await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
