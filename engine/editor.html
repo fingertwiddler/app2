@@ -77,7 +77,7 @@ const render = async (path) => {
   if (path) {
     let str;
     try {
-      str = await fs.promises.readFile(path, "utf8")
+      str = await fs.promises.readFile(M.config.path.src.content + "/" + path, "utf8")
 
       let parsed = matter(str)
       let md = parsed.content
