@@ -282,11 +282,11 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   console.log("built")
 
   document.querySelector("#save").classList.remove("enabled")
-  if (redirect) {
+//  if (redirect) {
     setTimeout(() => {
       location.href = "./editor?src=" + src
     }, 1000)
-  }
+//  }
 });
 
 
