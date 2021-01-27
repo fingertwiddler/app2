@@ -43,6 +43,7 @@ const slugify = (string) => {
     .replace(/-+$/, '') // Trim - from end of text
 }
 const render = async (path) => {
+  console.time("editor")
   editor = new Editor({
     frontMatter: true,
     el: document.querySelector('#editor'),
@@ -74,12 +75,16 @@ const render = async (path) => {
       }
     }
   });
+  console.timeEnd("editor")
   if (path) {
     let str;
     try {
+      console.time("readFile")
       str = await fs.promises.readFile(path, "utf8")
-
+      console.timeEnd("readFile")
+      console.time("md")
       let parsed = matter(str)
+      console.timeEnd("md")
       let md = parsed.content
       let metadata = parsed.data
       if (metadata.draft) {
@@ -90,7 +95,9 @@ const render = async (path) => {
     } catch (e) {
       console.log("error", e)
     }
+    console.time("setMD")
     editor.setMarkdown(str)
+    console.timeEnd("setMD")
   }
 }
 const updated = async () => {
@@ -252,7 +259,6 @@ document.querySelector("#save").addEventListener("click", async (e) => {
   metadata.updated = Date.now()
 
   let name
-  debugger;
   let redirect = false;
   if (src) {
     name = src.split("/")[3]
