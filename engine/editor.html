@@ -4,7 +4,129 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.59.0/codemirror.min.css" />
 <link rel="stylesheet" href="https://uicdn.toast.com/editor/latest/toastui-editor.min.css" />
-<link rel='stylesheet' href="./style.css">
+<style>
+html {
+  height: 100%;
+  overflow: hidden;
+}
+body {
+  margin: 0;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  font-family: Sans-serif;
+}
+nav {
+  display: flex;
+  align-items: center;
+}
+nav .draft {
+  color: rgba(0,0,0,0.6);
+  padding: 5px 10px;
+  border-radius: 2px;
+  font-size: 14px;
+}
+.container {
+  flex-grow: 1;
+  display: flex;
+}
+#editor {
+  flex-grow: 1;
+}
+.container iframe {
+  border: none;
+  width: 500px;
+  height: 100%;
+}
+.flexible {
+  flex-grow: 1;
+}
+.brand {
+  text-decoration: none;
+  font-size: 18px;
+  font-weight: bold;
+  color: rgba(0,0,0,0.8);
+  font-family: Georgia;
+  font-style: italic;
+  margin: 0 10px;
+}
+.hidden {
+  display: none;
+}
+nav button, nav .button {
+  margin: 5px;
+  padding: 5px 10px;
+  border-radius: 2px;
+  background: none;
+  border: none;
+  color: rgba(0,0,0,0.8);
+  text-decoration: none;
+  font-size: 14px;
+  display: inline-block;
+  cursor: pointer;
+}
+nav button.enabled, nav .button.enabled {
+  background: rgba(0,0,0,0.8);
+  color: white;
+}
+.menu-items {
+  text-align: right;
+}
+.menu-items a {
+  display: block;
+  padding: 10px 15px;
+  color: rgba(0,0,0,0.8);
+  text-decoration: none;
+  font-size: 14px;
+}
+.sidebar .file {
+  cursor: pointer;
+  padding: 10px;
+  font-size: 14px;
+  text-decoration: none;
+  color: rgba(0,0,0,0.8);
+  display: block;
+}
+.file.selected {
+  background: rgba(0,0,0,0.1);
+}
+.swal2-content .images img {
+  height: 100px;
+  cursor: pointer;
+  border: 3px solid white;
+  box-sizing: border-box;
+}
+.swal2-content .images img.selected {
+  border: 3px solid royalblue;
+}
+.swal2-content .publish-form > * {
+  box-sizing: border-box;
+  margin-bottom: 10px;
+  width: 100%;
+  padding: 10px;
+  border-radius: 0;
+  border: 1px solid rgba(0,0,0,0.2);
+}
+.swal2-content .publish-form textarea {
+  height: 150px;
+}
+.swal2-content .publish-form .images {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: auto;
+  padding: 0;
+  text-align: left;
+  border: none;
+}
+.swal2-styled.swal2-confirm {
+  border-radius: 2px;
+  background: rgba(0,0,0,0.8);
+  color: white;
+}
+.swal2-modal {
+  border-radius: 0;
+}
+</style>
 </head>
 <body>
 <nav>
@@ -23,8 +145,10 @@
 import Editor from "https://jspm.dev/@toast-ui/editor"
 import Swal from "https://jspm.dev/sweetalert2"
 import matter from "https://jspm.dev/gray-matter"
+import Handlebars from "https://jspm.dev/handlebars"
+import marked from "https://jspm.dev/marked"
+import RSS from "https://jspm.dev/rss"
 import { fs, git } from "/offbase.js"
-import { Builder } from "./builder.js"
 const slugify = (string) => {
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
@@ -55,6 +179,149 @@ const deleted = async () => {
     })
   return filenames
 }
+class Builder {
+  constructor(fs, config) {
+    this.config = config
+    this.fs = fs
+  }
+  paginator (filenames, meta, template, CHUNK) {
+    let pages = [];
+    let counter = []
+    for (let i=0; i<filenames.length; i+=CHUNK) {
+      let page = filenames.slice(i, i + CHUNK)
+      pages.push(page)
+      counter.push({ number: i/CHUNK })
+    }
+    console.log("pages = ", pages)
+    let res = []
+    for(let i=0; i<pages.length; i++) {
+      counter[i].current = true;
+      let html = template({
+        title: this.config.NAME,
+        base: this.config.BASE,
+        items: pages[i].map((filename) => {
+          return {
+            filename: filename,
+            meta: meta[filename]
+          }
+        }),
+        pages: counter
+      })
+      res.push(html)
+      counter[i].current = false;
+    }
+    return res
+  }
+  async buildPost (key) {
+    let tps = await this.fs.promises.readFile("/theme/post.hbs", "utf8")
+    let tpl = Handlebars.compile(tps)
+    // Parse the source file
+    let contentPath = `${this.config.SRC}/${key}`
+    let content = await this.fs.promises.readFile(contentPath, "utf8")
+    let parsed = matter(content)
+    let md = parsed.content
+    let metadata = parsed.data
+    metadata.permalink = key
+
+    // Build Rendered Markdown HTML
+    //let html = marked(md)
+    let html = marked(md, { baseUrl: this.config.BASE }) 
+
+    // createa hidden dom
+    let div = document.createElement("div")
+    div.innerHTML = html
+    let images = []
+    div.querySelectorAll("img").forEach((el) => {
+      images.push(el.getAttribute("src"))
+    })
+
+    // copy all assets
+    for(let image of images) {
+      let match = /assets\/(.+)$/.exec(image)
+      if (match && match.length > 0) {
+        let assetPath = `${this.config.SRC}/assets/${match[1]}`
+        let b = await this.fs.promises.readFile(assetPath)
+        await this.fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
+      }
+    }
+    // Build full HTML page
+    let rendered = tpl({
+      base: this.config.BASE,
+      name: this.config.NAME,
+      content: html,
+      updated: metadata.updated,
+      filename: `${this.config.SRC}/${key}`,
+      title: metadata.title
+    }).trim()
+
+    // Write to the post folder
+    await this.fs.promises.mkdir(this.config.DEST).catch((e) => { })
+    await this.fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
+    await this.fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
+
+    return { html, metadata }
+  }
+  async build () {
+    // Create folders in case they're empty
+    await this.fs.promises.mkdir(this.config.DEST).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
+
+    // Instantiate templates
+  //  let tis = await fs.promises.readFile("/app/index.hbs", "utf8")
+    let tds = await this.fs.promises.readFile(this.config.THEME.HOME, "utf8")
+    let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
+    let tpl = {
+      post: Handlebars.compile(tps),
+      dashboard: Handlebars.compile(tds)
+    }
+
+    // Instantiate RSS
+    let feed = new RSS()
+
+    let filenames = []
+    let meta = {}
+    let src = await this.fs.promises.readdir(this.config.SRC)
+    for(let key of src) {
+      if (key === ".git") continue;
+      if (key === "assets") {
+        // Copy all assets to build folder
+        await this.fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+        let assets = await this.fs.promises.readdir(`${this.config.SRC}/assets`)
+        for(let file of assets) { 
+          let b = await this.fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
+          await this.fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
+        }
+      } else {
+        let { html, metadata } = await this.buildPost(key) 
+        meta[key] = metadata
+        if (metadata.draft) {
+          await this.fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
+        } else {
+          filenames.push(key)
+        }
+        feed.item({
+          title: metadata.title,
+          description: html,
+          url: `${this.config.BASE}/${key}`,
+          date: metadata.updated
+        })
+      }
+    }
+    let xml = feed.xml({ indent: true });
+    await this.fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
+    filenames.sort((a, b) => {
+      return parseInt(meta[b].updated) - parseInt(meta[a].updated);
+    })
+    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
+    let pages = await this.paginator(filenames, meta, tpl.dashboard, 3)
+    for(let i=0; i<pages.length; i++) {
+      await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
+      await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
+      if (i === 0) await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, pages[i])
+    }
+  }
+}
 class E {
   constructor (o) {
     this.src = o.src
@@ -79,12 +346,8 @@ class E {
           const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => {
-            console.log("e", e)
-          })
-          await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => {
-            console.log("e", e)
-          })
+          await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+          await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => { })
           callback("assets/" + hash, hash)
           return false;
         }
@@ -106,11 +369,15 @@ class E {
       console.log("error", e)
     })
   }
-  async unpublish() {
+  content() {
     let raw = this.editor.getMarkdown()
     let parsed = matter(raw)
     let md = parsed.content
     let metadata = parsed.data
+    return { metadata, md }
+  }
+  async unpublish() {
+    let { md, metadata } = this.content()
     metadata.draft = true
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(this.src, updatedContent)
@@ -120,12 +387,8 @@ class E {
     }, 1000)
   }
   async publish() {
-    let raw = this.editor.getMarkdown()
-    let parsed = matter(raw)
-    let md = parsed.content
-    let metadata = parsed.data
+    let { md, metadata } = this.content()
     metadata.draft = false;
-    console.log("metadata = ", metadata)
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(this.src, updatedContent)
     let isupdated = await updated()
@@ -134,30 +397,21 @@ class E {
       alert("no update")
       return;
     }
-    console.log("updated")
     await this.builder.build()
     setTimeout(() => {
       location.href = "/upload"
     }, 1000)
   }
   async save() {
-    let raw = this.editor.getMarkdown()
-    let parsed = matter(raw)
-    let md = parsed.content
-    let metadata = parsed.data
+    let { md, metadata } = this.content()
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
     let images = []
     for (let match of matches) {
       images.push(match[1])
     }
     let imageTags = images.map((image, i) => {
-      if (i === 0) {
-        return "<img class='selected' src='" + image + "'>"
-      } else {
-        return "<img src='" + image + "'>"
-      }
+      return (i === 0 ?  `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
     }).join("")
-
     let desc = (metadata.description ? metadata.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
     let {title, description, image} = await Swal.fire({
       title: 'Save',
@@ -172,9 +426,7 @@ class E {
           document.querySelectorAll(".images img").forEach((el2) => {
             el2.classList.remove("selected")
           })
-          if (e.target.getAttribute("src")) {
-            e.target.classList.toggle("selected")
-          }
+          if (e.target.getAttribute("src")) e.target.classList.toggle("selected")
         })
       },
       preConfirm: async () => {
@@ -209,14 +461,10 @@ class E {
         image: res.value[2]
       }
     })
-    console.log("title", title)
-    console.log("description", description)
-    console.log("image", image)
     metadata.title = title
     metadata.description = description
     metadata.image = image
     metadata.updated = Date.now()
-
     let name
     let redirect = false;
     if (this.src) {
@@ -226,24 +474,10 @@ class E {
       this.src = `${this.config.SRC}/${name}`
       redirect = true;
     }
-    //metadata.permalink = name.split().join("-").toLowerCase()
-    metadata.permalink = name
-
-    // if draft attribute does not exist, set it to true
-    // otherwise, ignore
-    if (!metadata.hasOwnProperty("draft")) {
-      metadata.draft = true
-    }
-
+    metadata.permalink = name;
+    if (!metadata.hasOwnProperty("draft")) metadata.draft = true;
     let updatedContent = matter.stringify(md, metadata)
-
     await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
-
-
-    console.log("start build")
-//    await build(M, fs, metadata.permalink)
-    console.log("built")
-
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
       setTimeout(() => {
@@ -254,25 +488,20 @@ class E {
     }
   }
   async destroy() {
-    if (!this.src) {
-      return;
-    }
+    if (!this.src) return;
     let sure = confirm("are you sure?")
     if (sure) {
-      // delete the file
+      // Delete files
       await fs.promises.unlink(this.src)
-
-      // delete the corresponding dest files
       let name = this.src.split("/")[2]
       await fs.promises.unlink(`${this.config.SRC}/${name}/index.html`).catch((e) => { })
       await fs.promises.rmdir(`${this.config.SRC}/${name}`).catch((e) => {})
-
       // remove from git too.
       let d = await deleted()
       for(let item of d) {
         await git.remove({ fs, dir: "/home", filepath: item[0] })
-        console.log("removed", item[0])
       }
+      // Build
       await this.builder.build()
       setTimeout(() => {
         location.href = "/upload"
@@ -280,7 +509,6 @@ class E {
     }
   }
 }
-
 var src = new URL(location.href).searchParams.get("src")
 var editor = new E({
   src: src,
@@ -307,7 +535,6 @@ document.querySelector("#upload").addEventListener("click", async (e) => {
 document.querySelector("#save").addEventListener("click", async (e) => {
   await editor.save()
 });
-
 </script>
 </body>
 </html>

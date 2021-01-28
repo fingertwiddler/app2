@@ -11,16 +11,6 @@
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
   }, {
-    "from": "/:name.js",
-    "to": "/app/engine/{{name}}.js",
-    "type": "application/javascript"
-  }, {
-    "from": "/menu.png",
-    "to": "/app/engine/menu.png"
-  }, {
-    "from": "/style.css",
-    "to": "/app/engine/style.css"
-  }, {
     "from": "/editor",
     "to": "/app/engine/editor.html"
   }, {
