@@ -149,11 +149,12 @@ import Handlebars from "https://jspm.dev/handlebars"
 import marked from "https://jspm.dev/marked"
 import RSS from "https://jspm.dev/rss"
 import { fs, git } from "/offbase.js"
-const slugify = (string) => {
+const slugify = (str) => {
+  str = decodeURIComponent(str)
   const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
   const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
   const p = new RegExp(a.split('').join('|'), 'g')
-  return string.toString().toLowerCase()
+  return str.toString().toLowerCase()
     .replace(/\s+/g, '-') // Replace spaces with -
     .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
     .replace(/&/g, '-and-') // Replace & with 'and'
