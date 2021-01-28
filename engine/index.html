@@ -188,7 +188,8 @@
 
     const PATH = "/home/src"
     const render = async (template, path) => {
-      let filenames = await fs.promises.readdir(path)
+      let filenames = []
+      filenames = await fs.promises.readdir(path).catch((e) => { })
       let promises = filenames.filter((filename) => {
         return filename !== "assets"
       }).map((filename) => {
