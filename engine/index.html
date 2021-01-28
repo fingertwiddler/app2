@@ -188,25 +188,28 @@
 
     const PATH = "/home/src"
     const render = async (template, path) => {
-      let filenames = []
-      filenames = await fs.promises.readdir(path).catch((e) => { })
-      let promises = filenames.filter((filename) => {
-        return filename !== "assets"
-      }).map((filename) => {
-        return fs.promises.readFile(path + "/" + filename, "utf8").then((content) => {
-          let parsed = matter(content)
-          let md = parsed.content
-          let metadata = parsed.data
-          metadata.permalink = filename
-          return {
-            filename: path + "/" + filename,
-            meta: metadata
-          }
+      let filenames = await fs.promises.readdir(path).catch((e) => { })
+      if (filenames) {
+        let promises = filenames.filter((filename) => {
+          return filename !== "assets"
+        }).map((filename) => {
+          return fs.promises.readFile(path + "/" + filename, "utf8").then((content) => {
+            let parsed = matter(content)
+            let md = parsed.content
+            let metadata = parsed.data
+            metadata.permalink = filename
+            return {
+              filename: path + "/" + filename,
+              meta: metadata
+            }
+          })
         })
-      })
-      let items = await Promise.all(promises)
-      items.sort((a, b) => parseInt(b.meta.updated) - parseInt(a.meta.updated));
-      return template({ items: items })
+        let items = await Promise.all(promises)
+        items.sort((a, b) => parseInt(b.meta.updated) - parseInt(a.meta.updated));
+        return template({ items: items })
+      } else {
+        return template({ items: [] })
+      }
     }
 
     render(Handlebars.compile(document.querySelector("#template").innerHTML), PATH).then((content) => {
