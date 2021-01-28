@@ -291,7 +291,7 @@ class Builder {
         feed.item({
           title: metadata.title,
           description: html,
-          url: `${this.config.BASE}/${key}`,
+          url: `${this.config.BASE}${key}`,
           date: metadata.updated
         })
       }
