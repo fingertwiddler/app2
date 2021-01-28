@@ -148,6 +148,7 @@ import matter from "https://jspm.dev/gray-matter"
 import Handlebars from "https://jspm.dev/handlebars"
 import marked from "https://jspm.dev/marked"
 import RSS from "https://jspm.dev/rss"
+import uslug from "https://jspm.dev/uslug"
 import { fs, git } from "/offbase.js"
 const slugify = (str) => {
   str = decodeURIComponent(str)
@@ -158,7 +159,8 @@ const slugify = (str) => {
     .replace(/\s+/g, '-') // Replace spaces with -
     .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
     .replace(/&/g, '-and-') // Replace & with 'and'
-    .replace(/[^\w\-]+/g, '') // Remove all non-word characters
+    //.replace(/[^\w\-]+/g, '') // Remove all non-word characters
+    .replace(/[^a-zA-Z0-9_\u3400-\u9FBF\s-]/g,'')
     .replace(/\-\-+/g, '-') // Replace multiple - with single -
     .replace(/^-+/, '') // Trim - from start of text
     .replace(/-+$/, '') // Trim - from end of text
@@ -459,7 +461,8 @@ class E {
     if (this.src) {
       name = this.src.split("/")[3]
     } else {
-      name = slugify(title)
+      //name = slugify(title)
+      name = uslug(title)
       this.src = `${this.config.SRC}/${name}`
       redirect = true;
     }
