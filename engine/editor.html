@@ -463,7 +463,7 @@ class E {
       redirect = true;
     }
     metadata.permalink = name;
-    if (!metadata.hasOwnProperty("draft")) metadata.draft = true;
+//    if (!metadata.hasOwnProperty("draft")) metadata.draft = true;
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
     document.querySelector("#save").classList.remove("enabled")
