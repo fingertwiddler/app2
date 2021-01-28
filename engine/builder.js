@@ -78,9 +78,9 @@ export class Builder {
     }).trim()
 
     // Write to the post folder
-    await this.fs.promises.mkdir(this.config.SRC).catch((e) => { })
-    await this.fs.promises.mkdir(`${this.config.SRC}/${key}`).catch((e) => { })
-    await this.fs.promises.writeFile(`${this.config.SRC}/${key}/index.html`, rendered)
+    await this.fs.promises.mkdir(this.config.DEST).catch((e) => { })
+    await this.fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
+    await this.fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
 
     return { html, metadata }
   }
