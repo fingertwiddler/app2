@@ -165,18 +165,14 @@ const slugify = (string) => {
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
   const filenames = (await git.statusMatrix({ fs, dir: "/" }))
-    .filter((row) => {
-      return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1)
-    })
+    .filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) })
     .map(row => row[FILE])
   return filenames.length > 0
 }
 const deleted = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
   const filenames = (await git.statusMatrix({ fs, dir: "/" }))
-    .filter((row) => {
-      return row[WORKDIR] === 0
-    })
+    .filter((row) => { return row[WORKDIR] === 0 })
   return filenames
 }
 class Builder {
@@ -213,20 +209,16 @@ class Builder {
     return res
   }
   async buildPost (key) {
-    let tps = await this.fs.promises.readFile("/theme/post.hbs", "utf8")
+    let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tps)
-    // Parse the source file
     let contentPath = `${this.config.SRC}/${key}`
     let content = await this.fs.promises.readFile(contentPath, "utf8")
     let parsed = matter(content)
     let md = parsed.content
     let metadata = parsed.data
     metadata.permalink = key
-
     // Build Rendered Markdown HTML
-    //let html = marked(md)
     let html = marked(md, { baseUrl: this.config.BASE }) 
-
     // createa hidden dom
     let div = document.createElement("div")
     div.innerHTML = html
@@ -268,13 +260,9 @@ class Builder {
     await this.fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
 
     // Instantiate templates
-  //  let tis = await fs.promises.readFile("/app/index.hbs", "utf8")
     let tds = await this.fs.promises.readFile(this.config.THEME.HOME, "utf8")
     let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
-    let tpl = {
-      post: Handlebars.compile(tps),
-      dashboard: Handlebars.compile(tds)
-    }
+    let tpl = Handlebars.compile(tds)
 
     // Instantiate RSS
     let feed = new RSS()
@@ -314,7 +302,7 @@ class Builder {
       return parseInt(meta[b].updated) - parseInt(meta[a].updated);
     })
     await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
-    let pages = await this.paginator(filenames, meta, tpl.dashboard, 3)
+    let pages = await this.paginator(filenames, meta, tpl, this.config.PAGE.CHUNK)
     for(let i=0; i<pages.length; i++) {
       await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
       await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
@@ -510,31 +498,41 @@ class E {
   }
 }
 var src = new URL(location.href).searchParams.get("src")
-var editor = new E({
-  src: src,
-  config: {
-    SRC: "/home/src",
-    DEST: "/home/blog",
-    NAME: "Twiddler",
-    BASE: "https://fingertwiddler.github.io/test/blog/",
-    THEME: {
-      HOME: "/theme/dashboard.hbs",
-      POST: "/theme/post.hbs"
-    }
-  }
+fs.promises.readFile("/home/offbase.json", "utf8").then((o) => {
+  let config = JSON.parse(o)
+  console.log("config = ", config)
+  var editor = new E({
+    src, config: config.settings
+  })
+//    src: src,
+//    config: 
+//    config: {
+//      SRC: "/home/src",
+//      DEST: "/home/blog",
+//      NAME: "Twiddler",
+//      BASE: "https://fingertwiddler.github.io/test/blog/",
+//      THEME: {
+//        HOME: "/theme/dashboard.hbs",
+//        POST: "/theme/post.hbs"
+//      },
+//      PAGE: {
+//        CHUNK: 3
+//      }
+//    }
+//  })
+  document.querySelector("#delete").addEventListener("click", async (e) => {
+    editor.destroy()
+  })
+  document.querySelector("#unpublish").addEventListener("click", async (e) => {
+    await editor.unpublish() 
+  })
+  document.querySelector("#upload").addEventListener("click", async (e) => {
+    await editor.publish()
+  })
+  document.querySelector("#save").addEventListener("click", async (e) => {
+    await editor.save()
+  });
 })
-document.querySelector("#delete").addEventListener("click", async (e) => {
-  editor.destroy()
-})
-document.querySelector("#unpublish").addEventListener("click", async (e) => {
-  await editor.unpublish() 
-})
-document.querySelector("#upload").addEventListener("click", async (e) => {
-  await editor.publish()
-})
-document.querySelector("#save").addEventListener("click", async (e) => {
-  await editor.save()
-});
 </script>
 </body>
 </html>
