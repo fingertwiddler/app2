@@ -150,33 +150,16 @@ import marked from "https://jspm.dev/marked"
 import RSS from "https://jspm.dev/rss"
 import uslug from "https://jspm.dev/uslug"
 import { fs, git } from "/offbase.js"
-const slugify = (str) => {
-  str = decodeURIComponent(str)
-  const a = 'àáâäæãåāăąçćčđďèéêëēėęěğǵḧîïíīįìłḿñńǹňôöòóœøōõőṕŕřßśšşșťțûüùúūǘůűųẃẍÿýžźż·/_,:;'
-  const b = 'aaaaaaaaaacccddeeeeeeeegghiiiiiilmnnnnoooooooooprrsssssttuuuuuuuuuwxyyzzz------'
-  const p = new RegExp(a.split('').join('|'), 'g')
-  return str.toString().toLowerCase()
-    .replace(/\s+/g, '-') // Replace spaces with -
-    .replace(p, c => b.charAt(a.indexOf(c))) // Replace special characters
-    .replace(/&/g, '-and-') // Replace & with 'and'
-    //.replace(/[^\w\-]+/g, '') // Remove all non-word characters
-    .replace(/[^a-zA-Z0-9_\u3400-\u9FBF\s-]/g,'')
-    .replace(/\-\-+/g, '-') // Replace multiple - with single -
-    .replace(/^-+/, '') // Trim - from start of text
-    .replace(/-+$/, '') // Trim - from end of text
-}
 const updated = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await git.statusMatrix({ fs, dir: "/" }))
-    .filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) })
-    .map(row => row[FILE])
+  let matrix = await git.statusMatrix({ fs, dir: "/home" })
+  const filenames = matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
   return filenames.length > 0
 }
 const deleted = async () => {
   const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  const filenames = (await git.statusMatrix({ fs, dir: "/" }))
-    .filter((row) => { return row[WORKDIR] === 0 })
-  return filenames
+  let matrix = await git.statusMatrix({ fs, dir: "/home" })
+  return matrix.filter((row) => { return row[WORKDIR] === 0 })
 }
 class Builder {
   constructor(fs, config) {
@@ -191,7 +174,6 @@ class Builder {
       pages.push(page)
       counter.push({ number: i/CHUNK })
     }
-    console.log("pages = ", pages)
     let res = []
     for(let i=0; i<pages.length; i++) {
       counter[i].current = true;
@@ -273,17 +255,8 @@ class Builder {
     let filenames = []
     let meta = {}
     let src = await this.fs.promises.readdir(this.config.SRC)
-    for(let key of src) {
-      if (key === ".git") continue;
-      if (key === "assets") {
-        // Copy all assets to build folder
-        await this.fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
-        let assets = await this.fs.promises.readdir(`${this.config.SRC}/assets`)
-        for(let file of assets) { 
-          let b = await this.fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
-          await this.fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
-        }
-      } else {
+    let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
+      return new Promise(async (resolve, reject) => {
         let { html, metadata } = await this.buildPost(key) 
         meta[key] = metadata
         if (metadata.draft) {
@@ -297,8 +270,19 @@ class Builder {
           url: `${this.config.BASE}${key}`,
           date: metadata.updated
         })
-      }
+        resolve()
+      })
+    })
+    await Promise.all(promises)
+
+    // build assets
+    await this.fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+    let assets = await this.fs.promises.readdir(`${this.config.SRC}/assets`)
+    for(let file of assets) { 
+      let b = await this.fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
+      await this.fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
     }
+
     let xml = feed.xml({ indent: true });
     await this.fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
     filenames.sort((a, b) => {
@@ -461,13 +445,11 @@ class E {
     if (this.src) {
       name = this.src.split("/")[3]
     } else {
-      //name = slugify(title)
       name = uslug(title)
       this.src = `${this.config.SRC}/${name}`
       redirect = true;
     }
     metadata.permalink = name;
-//    if (!metadata.hasOwnProperty("draft")) metadata.draft = true;
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
     document.querySelector("#save").classList.remove("enabled")
