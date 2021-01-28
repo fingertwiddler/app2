@@ -321,6 +321,7 @@ class E {
           const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          await fs.promises.mkdir(this.config.SRC).catch((e) => { })
           await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
           await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => { })
           callback("assets/" + hash, hash)
