@@ -504,22 +504,6 @@ fs.promises.readFile("/home/offbase.json", "utf8").then((o) => {
   var editor = new E({
     src, config: config.settings
   })
-//    src: src,
-//    config: 
-//    config: {
-//      SRC: "/home/src",
-//      DEST: "/home/blog",
-//      NAME: "Twiddler",
-//      BASE: "https://fingertwiddler.github.io/test/blog/",
-//      THEME: {
-//        HOME: "/theme/dashboard.hbs",
-//        POST: "/theme/post.hbs"
-//      },
-//      PAGE: {
-//        CHUNK: 3
-//      }
-//    }
-//  })
   document.querySelector("#delete").addEventListener("click", async (e) => {
     editor.destroy()
   })
