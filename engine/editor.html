@@ -451,6 +451,7 @@ class E {
     }
     metadata.permalink = name;
     let updatedContent = matter.stringify(md, metadata)
+    await fs.promises.mkdir(this.config.SRC).catch((e) => { })
     await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
