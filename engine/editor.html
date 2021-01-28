@@ -374,7 +374,7 @@ class E {
     let parsed = matter(raw)
     let md = parsed.content
     let metadata = parsed.data
-    return { metadata, md }
+    return { metadata, md, raw }
   }
   async unpublish() {
     let { md, metadata } = this.content()
@@ -403,7 +403,7 @@ class E {
     }, 1000)
   }
   async save() {
-    let { md, metadata } = this.content()
+    let { md, metadata, raw } = this.content()
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
     let images = []
     for (let match of matches) {
