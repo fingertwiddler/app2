@@ -164,6 +164,7 @@ const deleted = async () => {
 class Builder {
   constructor(fs, config) {
     this.config = config
+    if (!this.config.FEED.BASE) this.config.FEED.BASE = "/"
     this.fs = fs
   }
   paginator (filenames, meta, template, CHUNK) {
@@ -179,7 +180,7 @@ class Builder {
       counter[i].current = true;
       let html = template({
         title: this.config.NAME,
-        base: this.config.BASE,
+        base: this.config.FEED.BASE,
         items: pages[i].map((filename) => {
           return {
             filename: filename,
@@ -203,7 +204,7 @@ class Builder {
     let metadata = parsed.data
     metadata.permalink = key
     // Build Rendered Markdown HTML
-    let html = marked(md, { baseUrl: this.config.BASE }) 
+    let html = marked(md, { baseUrl: this.config.FEED.BASE }) 
     // createa hidden dom
     let div = document.createElement("div")
     div.innerHTML = html
@@ -223,7 +224,7 @@ class Builder {
     }
     // Build full HTML page
     let rendered = tpl({
-      base: this.config.BASE,
+      base: this.config.FEED.BASE,
       name: this.config.NAME,
       content: html,
       updated: metadata.updated,
@@ -249,6 +250,7 @@ class Builder {
     let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tds)
 
+    // Do RSS only when there's custom BASE URL
     // Instantiate RSS
     let feed = new RSS()
 
@@ -264,12 +266,14 @@ class Builder {
         } else {
           filenames.push(key)
         }
-        feed.item({
-          title: metadata.title,
-          description: html,
-          url: `${this.config.BASE}${key}`,
-          date: metadata.updated
-        })
+        if (feed.items.length < this.config.FEED.CHUNK) {
+          feed.item({
+            title: metadata.title,
+            description: html,
+            url: `${this.config.FEED.BASE}${key}`,
+            date: metadata.updated
+          })
+        }
         resolve()
       })
     })

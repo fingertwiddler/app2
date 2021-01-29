@@ -1,12 +1,7 @@
 {
   "name": "superblog",
   "description": "superblog",
-  "image": "/typewriter.jpg",
-  "require": {
-    "theme": {
-      "url": "https://github.com/fingertwiddler/theme.git"
-    }
-  },
+  "image": "/app/typewriter.jpg",
   "routes": [{
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
