@@ -220,7 +220,7 @@ class Builder {
     // Build Rendered Markdown HTML
     let html;
     if (this.config.FEED.BASE.length === 0) {
-      html = marked(md, { baseUrl: ".." }) 
+      html = marked(md, { baseUrl: "../" }) 
     } else {
       html = marked(md, { baseUrl: this.config.FEED.BASE }) 
     }
