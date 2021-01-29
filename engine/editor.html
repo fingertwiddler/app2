@@ -164,10 +164,9 @@ const deleted = async () => {
 class Builder {
   constructor(fs, config) {
     this.config = config
-    if (!this.config.FEED.BASE) this.config.FEED.BASE = "/"
     this.fs = fs
   }
-  paginator (filenames, meta, template, CHUNK) {
+  paginator (filenames, meta, template, base, CHUNK) {
     let pages = [];
     let counter = []
     for (let i=0; i<filenames.length; i+=CHUNK) {
@@ -180,7 +179,7 @@ class Builder {
       counter[i].current = true;
       let html = template({
         title: this.config.NAME,
-        base: this.config.FEED.BASE,
+        base: base,
         items: pages[i].map((filename) => {
           return {
             filename: filename,
@@ -204,7 +203,12 @@ class Builder {
     let metadata = parsed.data
     metadata.permalink = key
     // Build Rendered Markdown HTML
-    let html = marked(md, { baseUrl: this.config.FEED.BASE }) 
+    let html;
+    if (this.config.FEED.BASE.length === 0) {
+      html = marked(md, { baseUrl: ".." }) 
+    } else {
+      html = marked(md, { baseUrl: this.config.FEED.BASE }) 
+    }
     // createa hidden dom
     let div = document.createElement("div")
     div.innerHTML = html
@@ -224,7 +228,6 @@ class Builder {
     }
     // Build full HTML page
     let rendered = tpl({
-      base: this.config.FEED.BASE,
       name: this.config.NAME,
       content: html,
       updated: metadata.updated,
@@ -293,12 +296,25 @@ class Builder {
       return parseInt(meta[b].updated) - parseInt(meta[a].updated);
     })
     await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
-    let pages = await this.paginator(filenames, meta, tpl, this.config.PAGE.CHUNK)
+    // build pages
+    let pages = await this.paginator(filenames, meta, tpl, "../..", this.config.PAGE.CHUNK)
     for(let i=0; i<pages.length; i++) {
       await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
       await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
-      if (i === 0) await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, pages[i])
     }
+    // build index.html
+    let html = template({
+      title: this.config.NAME,
+      base: "./",
+      items: pages[i].map((filename) => {
+        return {
+          filename: filename,
+          meta: meta[filename]
+        }
+      }),
+      pages: counter
+    })
+    await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, html)
   }
 }
 class E {
