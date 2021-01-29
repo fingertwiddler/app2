@@ -303,7 +303,7 @@ class Builder {
       await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
     }
     // build index.html
-    let html = template({
+    let html = tpl({
       title: this.config.NAME,
       base: "./",
       items: pages[i].map((filename) => {
