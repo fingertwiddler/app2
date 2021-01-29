@@ -306,13 +306,13 @@ class Builder {
     let html = tpl({
       title: this.config.NAME,
       base: "./",
-      items: pages[i].map((filename) => {
+      items: pages[0].map((filename) => {
         return {
           filename: filename,
           meta: meta[filename]
         }
       }),
-      pages: counter
+      pages: 0
     })
     await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, html)
   }
