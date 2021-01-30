@@ -88,7 +88,7 @@ export class Builder {
     })
 
     let modules = await Promise.all(this.config.events.publish.map((mod) => {
-      return import(`./module/${mod}`)
+      return import(`../module/${mod}`)
     }))
     for(let mod of modules) {
       await mod.default(publicItems, this.config, {
