@@ -213,7 +213,7 @@ class Builder {
       name: config.NAME,
       content: html,
       updated: data.updated,
-      filename: `${config.SRC}/${mdPath}`,
+      filename: `${config.SRC}/${filename}`,
       title: data.title
     }).trim()
     await fs.promises.mkdir(`${config.DEST}/${mdFilename}`).catch((e) => { })
