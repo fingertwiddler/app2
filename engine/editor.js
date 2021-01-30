@@ -48,9 +48,9 @@ export class E {
   }
   async save() {
     //let { content, data, raw } = this.content()
-    let { status, name } = await this.model.save(this.content())
+    let { status, path } = await this.model.save(this.content())
     if (status === "created") {
-      location.href = "./editor?src=" + name;
+      location.href = "./editor?src=" + path;
     } else {
       document.querySelector("#save").classList.remove("enabled")
       this.editor.setMarkdown(updatedContent)
