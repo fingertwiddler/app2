@@ -1,5 +1,6 @@
 import Handlebars from "https://jspm.dev/handlebars"
 import marked from "https://jspm.dev/marked"
+import matter from "https://jspm.dev/gray-matter"
 export class Builder {
   constructor(o) {
     this.config = o.config
