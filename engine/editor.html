@@ -227,7 +227,7 @@ class Builder {
   }
   async build () {
     let src = await fs.promises.readdir(this.config.SRC)
-    let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
+    let items = await Promise.all(src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
         let { content, data } = await this.getPost(key) 
         resolve({
@@ -236,8 +236,7 @@ class Builder {
           content: content
         })
       })
-    })
-    let items = await Promise.all(promises)
+    }))
     let publicItems = []
     for(let item of items) {
       if (item.data.draft) {
@@ -250,10 +249,9 @@ class Builder {
       return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
 
-    let promises = config.events.publish.map((mod) => {
+    let modules = await Promise.all(config.events.publish.map((mod) => {
       return import(`./module/${mod}`)
-    })
-    let modules = await Promise.all(promises)
+    }))
     for(let mod of modules) {
       await mod(publicItems, this.config, {
         fs, git
