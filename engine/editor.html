@@ -156,7 +156,7 @@ var src = new URL(location.href).searchParams.get("src");
   await fs.promises.mkdir(`${config.settings.SRC}/assets`).catch((e) => {})
   await fs.promises.mkdir(`${config.settings.DEST}/assets`).catch((e) => {})
 
-  let builder = new Builder({ src, config: config.settings })
+  let builder = new Builder({ src, fs, git, config: config.settings })
   let model = new Model({ fs, builder, git, src, config: config.settings })
   let editor = new E({
     model: model,
