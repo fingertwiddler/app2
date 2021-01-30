@@ -493,12 +493,13 @@ class E {
 };
 var src = new URL(location.href).searchParams.get("src");
 (async () => {
-  await fs.promises.mkdir(this.config.SRC).catch((e) => {})
-  await fs.promises.mkdir(this.config.DEST).catch((e) => {})
-  await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => {})
-  await fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
   let o = await fs.promises.readFile("/home/offbase.json", "utf8")
   let config = JSON.parse(o)
+
+  await fs.promises.mkdir(config.SRC).catch((e) => {})
+  await fs.promises.mkdir(config.DEST).catch((e) => {})
+  await fs.promises.mkdir(`${config.SRC}/assets`).catch((e) => {})
+  await fs.promises.mkdir(`${config.DEST}/assets`).catch((e) => {})
 
   // instantiate modules
 
