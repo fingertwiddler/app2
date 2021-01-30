@@ -154,11 +154,12 @@ class Builder {
   constructor(config) {
     this.config = config
   }
-  paginator (filenames, meta, template, CHUNK) {
+  //paginator (filenames, meta, template, CHUNK) {
+  paginator (items, template, CHUNK) {
     let pages = [];
     let counter = []
-    for (let i=0; i<filenames.length; i+=CHUNK) {
-      let page = filenames.slice(i, i + CHUNK)
+    for (let i=0; i<items.length; i+=CHUNK) {
+      let page = items.slice(i, i + CHUNK)
       pages.push(page)
       counter.push({ number: i/CHUNK })
     }
@@ -169,10 +170,10 @@ class Builder {
       let html = template({
         title: this.config.NAME,
         base: "../../",
-        items: pages[i].map((filename) => {
+        items: pages[i].map((item) => {
           return {
-            filename: filename,
-            meta: meta[filename]
+            filename: item.key,
+            meta: item.metadata
           }
         }),
         pages: counter
@@ -183,10 +184,10 @@ class Builder {
         index = template({
           title: this.config.NAME,
           base: "./",
-          items: pages[i].map((filename) => {
+          items: pages[i].map((item) => {
             return {
-              filename: filename,
-              meta: meta[filename]
+              filename: item.key,
+              meta: item.metadata
             }
           }),
           pages: counter
@@ -212,6 +213,8 @@ class Builder {
     } else {
       html = marked(md, { baseUrl: this.config.FEED.BASE }) 
     }
+    debugger;
+    console.log("html =", html)
     // createa hidden dom
     let div = document.createElement("div")
     div.innerHTML = html
@@ -221,6 +224,7 @@ class Builder {
     })
 
     // copy all assets
+    console.log("images =", images)
     for(let image of images) {
       let match = /assets\/(.+)$/.exec(image)
       if (match && match.length > 0) {
@@ -248,12 +252,10 @@ class Builder {
   async build () {
     // Create folders in case they're empty
     await fs.promises.mkdir(this.config.DEST).catch((e) => {})
-    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
     await fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
 
     // Instantiate templates
     let tds = await fs.promises.readFile(this.config.THEME.HOME, "utf8")
-    let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tds)
 
     // Do RSS only when there's custom BASE URL
@@ -261,29 +263,43 @@ class Builder {
     let feed = new RSS()
 
     let filenames = []
-    let meta = {}
+    //let meta = {}
     let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
         let { html, metadata } = await this.buildPost(key) 
-        meta[key] = metadata
-        if (metadata.draft) {
-          await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
-        } else {
-          filenames.push(key)
-        }
-        if (feed.items.length < this.config.FEED.CHUNK) {
-          feed.item({
-            title: metadata.title,
-            description: html,
-            url: `${this.config.FEED.BASE}${key}`,
-            date: metadata.updated
-          })
-        }
-        resolve()
+        resolve({
+          key: key,
+          metadata: metadata,
+          html: html
+        })
       })
     })
-    await Promise.all(promises)
+    let items = await Promise.all(promises)
+    let publicItems = []
+    items.forEach((item) => {
+      if (item.metadata.draft) {
+        await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
+      } else {
+        publicItems.push(item)
+      }
+    })
+    publicItems.sort((a, b) => {
+      return parseInt(b.metadata.updated) - parseInt(a.metadata.updated);
+    })
+
+    let feedItems = publicItems.slice(0, this.config.FEED.CHUNK)
+    feedItems.forEach((item) => {
+      feed.item({
+        title: item.metadata.title,
+        description: item.html,
+        url: `${this.config.FEED.BASE}${item.key}`,
+        date: item.metadata.updated
+      })
+    })
+    let xml = feed.xml({ indent: true });
+    await fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
+
 
     // build assets
     await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
@@ -293,14 +309,9 @@ class Builder {
       await fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
     }
 
-    let xml = feed.xml({ indent: true });
-    await fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
-    filenames.sort((a, b) => {
-      return parseInt(meta[b].updated) - parseInt(meta[a].updated);
-    })
-    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
     // build pages
-    let { index, pages } = await this.paginator(filenames, meta, tpl, this.config.PAGE.CHUNK)
+    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
+    let { index, pages } = await this.paginator(filenames, tpl, this.config.PAGE.CHUNK)
     for(let i=0; i<pages.length; i++) {
       await fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
       await fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
