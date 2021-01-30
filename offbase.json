@@ -6,6 +6,10 @@
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
   }, {
+    "from": "/js/:filename.js",
+    "to": "/app/engines/{{filename}}.js",
+    "type": "application/javascript"
+  }, {
     "from": "/editor",
     "to": "/app/engine/editor.html"
   }, {
