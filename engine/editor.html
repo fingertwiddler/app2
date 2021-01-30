@@ -313,7 +313,7 @@ class Builder {
 
     // build pages
     await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
-    let { index, pages } = await this.paginator(filenames, tpl, this.config.PAGE.CHUNK)
+    let { index, pages } = await this.paginator(publicItems,, tpl, this.config.PAGE.CHUNK)
     for(let i=0; i<pages.length; i++) {
       await fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
       await fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
