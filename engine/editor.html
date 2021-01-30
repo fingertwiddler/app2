@@ -156,10 +156,15 @@ class Builder {
     this.src = o.src
   }
   async buildPost (key) {
+    console.time("read theme")
     let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
+    console.timeEnd("read theme")
     let tpl = Handlebars.compile(tps)
     let contentPath = `${this.config.SRC}/${key}`
+    console.time("read src")
     let md = await fs.promises.readFile(contentPath, "utf8")
+    console.timeEnd("read src")
+    console.time("build")
     // parse markdown
     let { content, data } = matter(md)
     data.permalink = key
@@ -198,9 +203,19 @@ class Builder {
     // Write post to DEST
     await fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
     await fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
+    console.timeEnd("build")
 
     return { html, data }
   }
+  /*
+  async getPost (key) {
+    let srcPath = `${this.config.DEST}/${key}`
+    let destPath = `${this.config.DEST}/${key}`
+    let html = await fs.promises.readFile(contentPath, "utf8")
+    let data
+    let { content, data } = matter(md)
+  }
+  */
   async build () {
     // Create folders in case they're empty
 
@@ -402,6 +417,7 @@ class E {
     data.permalink = name;
     let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
+    await this.buildPost(data.permalink) 
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
       setTimeout(() => {
