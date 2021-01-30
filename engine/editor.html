@@ -253,7 +253,7 @@ class Builder {
       return import(`./module/${mod}`)
     }))
     for(let mod of modules) {
-      await mod(publicItems, this.config, {
+      await mod.default(publicItems, this.config, {
         fs, git
       })
     }
