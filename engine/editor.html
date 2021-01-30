@@ -145,7 +145,7 @@ nav button.enabled, nav .button.enabled {
 import { fs, git } from "/offbase.js"
 import { Builder } from "./js/builder.js"
 import { Model } from "./js/model.js"
-import { Editor } from "./js/editor.js"
+import { E } from "./js/editor.js"
 var src = new URL(location.href).searchParams.get("src");
 (async () => {
   let o = await fs.promises.readFile("/home/offbase.json", "utf8")
