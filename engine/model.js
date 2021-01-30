@@ -28,7 +28,7 @@ export class Model {
   }
   async load(path) {
     let raw = await this.fs.promises.readFile(path, "utf8")
-    let { data, content } = matter(str)
+    let { data, content } = matter(raw)
     return { data, content, raw }
   }
   async unpublish({ content, data }) {
