@@ -281,7 +281,9 @@ class Builder {
     })
 
     for(let mod of this.modules.publish) {
-      await mod(publicItems, this.config)
+      await mod(publicItems, this.config, {
+        fs, git
+      })
     }
 
     // build pages
@@ -505,7 +507,6 @@ var src = new URL(location.href).searchParams.get("src");
     let o = await import(`./module/${mod}`)
     publishModules.push(o.default) 
   }
-  debugger;
 
   var editor = new E({
     src: src,
