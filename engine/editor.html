@@ -156,6 +156,7 @@ class Builder {
   }
   //paginator (filenames, meta, template, CHUNK) {
   paginator (items, template, CHUNK) {
+    console.log("items = ", items)
     let pages = [];
     let counter = []
     for (let i=0; i<items.length; i+=CHUNK) {
@@ -166,6 +167,7 @@ class Builder {
     let res = []
     let index;
     for(let i=0; i<pages.length; i++) {
+      console.log("page = ", pages[i])
       counter[i].current = true;
       let html = template({
         title: this.config.NAME,
