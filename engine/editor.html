@@ -505,7 +505,7 @@ var src = new URL(location.href).searchParams.get("src");
 
   let publishModules = []
   for(let mod of config.events.publish) {
-    let o = await import(`/${mod}/index.js`)
+    let o = await import(`./module/${mod}`)
     publishModules.push(o.default) 
   }
   debugger;

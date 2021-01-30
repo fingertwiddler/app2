@@ -15,5 +15,9 @@
     "from": "/",
     "to": "/app/engine/index.html",
     "type": "text/html"
+  }, {
+    "from": "/module/:path",
+    "to": "/{{path}}/index.js",
+    "type": "application/javascript"
   }]
 }
