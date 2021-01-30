@@ -227,12 +227,14 @@ class Builder {
 
     // copy all assets
     console.log("images =", images)
+    await fs.promises.mkdir(this.config.DEST).catch((e) => {})
+    await fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
     for(let image of images) {
       let match = /assets\/(.+)$/.exec(image)
       if (match && match.length > 0) {
         let assetPath = `${this.config.SRC}/assets/${match[1]}`
         let b = await fs.promises.readFile(assetPath)
-        await fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
+        await fs.promises.writeFile(`${this.config.DEST}/assets/${match[1]}`, b)
       }
     }
     // Build full HTML page
@@ -303,13 +305,13 @@ class Builder {
     await fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
 
 
-    // build assets
-    await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
-    let assets = await fs.promises.readdir(`${this.config.SRC}/assets`)
-    for(let file of assets) { 
-      let b = await fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
-      await fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
-    }
+//    // build assets
+//    await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+//    let assets = await fs.promises.readdir(`${this.config.SRC}/assets`)
+//    for(let file of assets) { 
+//      let b = await fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
+//      await fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
+//    }
 
     // build pages
     await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
