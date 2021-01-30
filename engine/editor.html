@@ -498,10 +498,10 @@ var src = new URL(location.href).searchParams.get("src");
   let o = await fs.promises.readFile("/home/offbase.json", "utf8")
   let config = JSON.parse(o)
 
-  await fs.promises.mkdir(config.SRC).catch((e) => {})
-  await fs.promises.mkdir(config.DEST).catch((e) => {})
-  await fs.promises.mkdir(`${config.SRC}/assets`).catch((e) => {})
-  await fs.promises.mkdir(`${config.DEST}/assets`).catch((e) => {})
+  await fs.promises.mkdir(config.settings.SRC).catch((e) => {})
+  await fs.promises.mkdir(config.settings.DEST).catch((e) => {})
+  await fs.promises.mkdir(`${config.settings.SRC}/assets`).catch((e) => {})
+  await fs.promises.mkdir(`${config.settings.DEST}/assets`).catch((e) => {})
 
   // instantiate modules
 
