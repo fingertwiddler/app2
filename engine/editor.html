@@ -177,7 +177,7 @@ class Builder {
         items: pages[i].map((item) => {
           return {
             filename: item.key,
-            meta: item.metadata
+            meta: item.data
           }
         }),
         pages: counter
@@ -191,7 +191,7 @@ class Builder {
           items: pages[i].map((item) => {
             return {
               filename: item.key,
-              meta: item.metadata
+              meta: item.data
             }
           }),
           pages: counter
@@ -260,10 +260,10 @@ class Builder {
     let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
-        let { html, metadata } = await this.buildPost(key) 
+        let { html, data } = await this.buildPost(key) 
         resolve({
           key: key,
-          metadata: metadata,
+          data: data,
           html: html
         })
       })
@@ -271,14 +271,14 @@ class Builder {
     let items = await Promise.all(promises)
     let publicItems = []
     for(let item of items) {
-      if (item.metadata.draft) {
+      if (item.data.draft) {
         await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
       } else {
         publicItems.push(item)
       }
     }
     publicItems.sort((a, b) => {
-      return parseInt(b.metadata.updated) - parseInt(a.metadata.updated);
+      return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
 
     for(let mod of this.modules.publish) {
@@ -332,10 +332,8 @@ class E {
   fill (path) {
     fs.promises.readFile(path, "utf8").then((str) => {
       this.editor.setMarkdown(str)
-      let parsed = matter(str)
-      let md = parsed.content
-      let metadata = parsed.data
-      if (metadata.draft) {
+      let { data, content } = matter(str)
+      if (data.draft) {
         document.querySelector("#unpublish").classList.add("hidden")
         document.querySelector(".draft").classList.remove("hidden")
       }
@@ -356,15 +354,13 @@ class E {
   }
   content() {
     let raw = this.editor.getMarkdown()
-    let parsed = matter(raw)
-    let md = parsed.content
-    let metadata = parsed.data
-    return { metadata, md, raw }
+    let { content, data } = matter(raw)
+    return { content, data, raw }
   }
   async unpublish() {
-    let { md, metadata } = this.content()
-    metadata.draft = true
-    let updatedContent = matter.stringify(md, metadata)
+    let { content, data } = this.content()
+    data.draft = true
+    let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(this.src, updatedContent)
     await this.builder.build()
     setTimeout(() => {
@@ -372,9 +368,9 @@ class E {
     }, 1000)
   }
   async publish() {
-    let { md, metadata } = this.content()
-    metadata.draft = false;
-    let updatedContent = matter.stringify(md, metadata)
+    let { content, data } = this.content()
+    data.draft = false;
+    let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(this.src, updatedContent)
     let isupdated = await this.updated()
     if (!isupdated) {
@@ -388,7 +384,7 @@ class E {
     }, 1000)
   }
   async save() {
-    let { md, metadata, raw } = this.content()
+    let { content, data, raw } = this.content()
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
     let images = []
     for (let match of matches) {
@@ -397,11 +393,11 @@ class E {
     let imageTags = images.map((image, i) => {
       return (i === 0 ?  `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
     }).join("")
-    let desc = (metadata.description ? metadata.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
+    let desc = (data.description ? data.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
     let {title, description, image} = await Swal.fire({
       title: 'Save',
       html: `<form class='publish-form'>
-  <input class='title' type='text' placeholder='enter title' value='${metadata.title ? metadata.title : ""}'>
+  <input class='title' type='text' placeholder='enter title' value='${data.title ? data.title : ""}'>
   <textarea class='description'>${desc}</textarea>
   <div class='images'>${imageTags}</div>
   </form>`,
@@ -446,10 +442,10 @@ class E {
         image: res.value[2]
       }
     })
-    metadata.title = title
-    metadata.description = description
-    metadata.image = image
-    metadata.updated = Date.now()
+    data.title = title
+    data.description = description
+    data.image = image
+    data.updated = Date.now()
     let name
     let redirect = false;
     if (this.src) {
@@ -459,9 +455,9 @@ class E {
       this.src = `${this.config.SRC}/${name}`
       redirect = true;
     }
-    metadata.permalink = name;
-    let updatedContent = matter.stringify(md, metadata)
-    await fs.promises.writeFile(`${this.config.SRC}/${metadata.permalink}`, updatedContent)
+    data.permalink = name;
+    let updatedContent = matter.stringify(content, data)
+    await fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
       setTimeout(() => {
