@@ -421,9 +421,9 @@ class E {
     await this.builder.buildPost(data.permalink) 
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
-      setTimeout(() => {
+      //setTimeout(() => {
         location.href = "./editor?src=" + this.src
-      }, 1000)
+      //}, 1000)
     } else {
       this.editor.setMarkdown(updatedContent)
     }
