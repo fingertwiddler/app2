@@ -10,13 +10,13 @@ export class Model {
   }
   async updated () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-    let matrix = await this.git.statusMatrix({ this.fs, dir: "/home" })
+    let matrix = await this.git.statusMatrix({ fs: this.fs, dir: "/home" })
     const filenames = matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
     return filenames.length > 0
   }
   async deleted () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-    let matrix = await this.git.statusMatrix({ this.fs, dir: "/home" })
+    let matrix = await this.git.statusMatrix({ fs: this.fs, dir: "/home" })
     return matrix.filter((row) => { return row[WORKDIR] === 0 })
   }
   async build () {
@@ -136,7 +136,7 @@ export class Model {
     // remove from git too.
     let d = await this.deleted()
     for(let item of d) {
-      await git.remove({ this.fs, dir: "/home", filepath: item[0] })
+      await git.remove({ fs: this.fs, dir: "/home", filepath: item[0] })
     }
     // Build
     await this.builder.build()
