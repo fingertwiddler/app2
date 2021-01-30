@@ -155,51 +155,6 @@ class Builder {
     this.modules = o.modules
     this.src = o.src
   }
-  //paginator (filenames, meta, template, CHUNK) {
-  paginator (items, template, CHUNK) {
-    console.log("items = ", items)
-    let pages = [];
-    let counter = []
-    for (let i=0; i<items.length; i+=CHUNK) {
-      let page = items.slice(i, i + CHUNK)
-      pages.push(page)
-      counter.push({ number: i/CHUNK })
-    }
-    let res = []
-    let index;
-    for(let i=0; i<pages.length; i++) {
-      console.log("page = ", pages[i])
-      counter[i].current = true;
-      let html = template({
-        title: this.config.NAME,
-        base: "../../",
-        items: pages[i].map((item) => {
-          return {
-            filename: item.key,
-            meta: item.data
-          }
-        }),
-        pages: counter
-      })
-      res.push(html)
-
-      if (i === 0) {
-        index = template({
-          title: this.config.NAME,
-          base: "./",
-          items: pages[i].map((item) => {
-            return {
-              filename: item.key,
-              meta: item.data
-            }
-          }),
-          pages: counter
-        })
-      }
-      counter[i].current = false;
-    }
-    return { index: index, pages: res }
-  }
   async buildPost (key) {
     let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tps)
@@ -249,10 +204,6 @@ class Builder {
   async build () {
     // Create folders in case they're empty
 
-    // Instantiate templates
-    let tds = await fs.promises.readFile(this.config.THEME.HOME, "utf8")
-    let tpl = Handlebars.compile(tds)
-
 
     let filenames = []
     //let meta = {}
@@ -286,14 +237,6 @@ class Builder {
       })
     }
 
-    // build pages
-    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
-    let { index, pages } = await this.paginator(publicItems, tpl, this.config.PAGE.CHUNK)
-    for(let i=0; i<pages.length; i++) {
-      await fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
-      await fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
-    }
-    await fs.promises.writeFile(`${this.config.DEST}/index.html`, index)
   }
 }
 class E {
