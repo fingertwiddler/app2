@@ -150,21 +150,9 @@ import marked from "https://jspm.dev/marked"
 import RSS from "https://jspm.dev/rss"
 import uslug from "https://jspm.dev/uslug"
 import { fs, git } from "/offbase.js"
-const updated = async () => {
-  const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  let matrix = await git.statusMatrix({ fs, dir: "/home" })
-  const filenames = matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
-  return filenames.length > 0
-}
-const deleted = async () => {
-  const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
-  let matrix = await git.statusMatrix({ fs, dir: "/home" })
-  return matrix.filter((row) => { return row[WORKDIR] === 0 })
-}
 class Builder {
-  constructor(fs, config) {
+  constructor(config) {
     this.config = config
-    this.fs = fs
   }
   paginator (filenames, meta, template, CHUNK) {
     let pages = [];
@@ -209,10 +197,10 @@ class Builder {
     return { index: index, pages: res }
   }
   async buildPost (key) {
-    let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
+    let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tps)
     let contentPath = `${this.config.SRC}/${key}`
-    let content = await this.fs.promises.readFile(contentPath, "utf8")
+    let content = await fs.promises.readFile(contentPath, "utf8")
     let parsed = matter(content)
     let md = parsed.content
     let metadata = parsed.data
@@ -237,8 +225,8 @@ class Builder {
       let match = /assets\/(.+)$/.exec(image)
       if (match && match.length > 0) {
         let assetPath = `${this.config.SRC}/assets/${match[1]}`
-        let b = await this.fs.promises.readFile(assetPath)
-        await this.fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
+        let b = await fs.promises.readFile(assetPath)
+        await fs.promises.writeFile(`${this.config.SRC}/assets/${match[1]}`, b)
       }
     }
     // Build full HTML page
@@ -251,21 +239,21 @@ class Builder {
     }).trim()
 
     // Write to the post folder
-    await this.fs.promises.mkdir(this.config.DEST).catch((e) => { })
-    await this.fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
-    await this.fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
+    await fs.promises.mkdir(this.config.DEST).catch((e) => { })
+    await fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
+    await fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
 
     return { html, metadata }
   }
   async build () {
     // Create folders in case they're empty
-    await this.fs.promises.mkdir(this.config.DEST).catch((e) => {})
-    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
-    await this.fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
+    await fs.promises.mkdir(this.config.DEST).catch((e) => {})
+    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => {})
+    await fs.promises.mkdir(`${this.config.DEST}/assets`).catch((e) => {})
 
     // Instantiate templates
-    let tds = await this.fs.promises.readFile(this.config.THEME.HOME, "utf8")
-    let tps = await this.fs.promises.readFile(this.config.THEME.POST, "utf8")
+    let tds = await fs.promises.readFile(this.config.THEME.HOME, "utf8")
+    let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
     let tpl = Handlebars.compile(tds)
 
     // Do RSS only when there's custom BASE URL
@@ -274,13 +262,13 @@ class Builder {
 
     let filenames = []
     let meta = {}
-    let src = await this.fs.promises.readdir(this.config.SRC)
+    let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
         let { html, metadata } = await this.buildPost(key) 
         meta[key] = metadata
         if (metadata.draft) {
-          await this.fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
+          await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
         } else {
           filenames.push(key)
         }
@@ -298,33 +286,33 @@ class Builder {
     await Promise.all(promises)
 
     // build assets
-    await this.fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
-    let assets = await this.fs.promises.readdir(`${this.config.SRC}/assets`)
+    await fs.promises.mkdir(`${this.config.SRC}/assets`).catch((e) => { })
+    let assets = await fs.promises.readdir(`${this.config.SRC}/assets`)
     for(let file of assets) { 
-      let b = await this.fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
-      await this.fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
+      let b = await fs.promises.readFile(`${this.config.SRC}/assets/${file}`)
+      await fs.promises.writeFile(`${this.config.DEST}/assets/${file}`, b)
     }
 
     let xml = feed.xml({ indent: true });
-    await this.fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
+    await fs.promises.writeFile(`${this.config.DEST}/rss.xml`, xml)
     filenames.sort((a, b) => {
       return parseInt(meta[b].updated) - parseInt(meta[a].updated);
     })
-    await this.fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
+    await fs.promises.mkdir(`${this.config.DEST}/pages`).catch((e) => { })
     // build pages
     let { index, pages } = await this.paginator(filenames, meta, tpl, this.config.PAGE.CHUNK)
     for(let i=0; i<pages.length; i++) {
-      await this.fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
-      await this.fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
+      await fs.promises.mkdir(`${this.config.DEST}/pages/${i}`).catch((e) => { })
+      await fs.promises.writeFile(`${this.config.DEST}/pages/${i}/index.html`, pages[i]).catch((e) => { })
     }
-    await this.fs.promises.writeFile(`${this.config.DEST}/index.html`, index)
+    await fs.promises.writeFile(`${this.config.DEST}/index.html`, index)
   }
 }
 class E {
   constructor (o) {
     this.src = o.src
     this.config = o.config
-    this.builder = new Builder(fs, o.config)
+    this.builder = new Builder(o.config)
     this.editor = new Editor({
       frontMatter: true,
       el: document.querySelector('#editor'),
@@ -368,6 +356,17 @@ class E {
       console.log("error", e)
     })
   }
+  async updated () {
+    const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
+    let matrix = await git.statusMatrix({ fs, dir: "/home" })
+    const filenames = matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
+    return filenames.length > 0
+  }
+  async deleted () {
+    const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
+    let matrix = await git.statusMatrix({ fs, dir: "/home" })
+    return matrix.filter((row) => { return row[WORKDIR] === 0 })
+  }
   content() {
     let raw = this.editor.getMarkdown()
     let parsed = matter(raw)
@@ -390,7 +389,7 @@ class E {
     metadata.draft = false;
     let updatedContent = matter.stringify(md, metadata)
     await fs.promises.writeFile(this.src, updatedContent)
-    let isupdated = await updated()
+    let isupdated = await this.updated()
     if (!isupdated) {
       console.log("no update")
       alert("no update")
@@ -496,7 +495,7 @@ class E {
       await fs.promises.unlink(`${this.config.SRC}/${name}/index.html`).catch((e) => { })
       await fs.promises.rmdir(`${this.config.SRC}/${name}`).catch((e) => {})
       // remove from git too.
-      let d = await deleted()
+      let d = await this.deleted()
       for(let item of d) {
         await git.remove({ fs, dir: "/home", filepath: item[0] })
       }
@@ -511,12 +510,9 @@ class E {
 var src = new URL(location.href).searchParams.get("src")
 fs.promises.readFile("/home/offbase.json", "utf8").then((o) => {
   let config = JSON.parse(o)
-  console.log("config = ", config)
-  var editor = new E({
-    src, config: config.settings
-  })
+  var editor = new E({ src: src, config: config.settings })
   document.querySelector("#delete").addEventListener("click", async (e) => {
-    editor.destroy()
+    await editor.destroy()
   })
   document.querySelector("#unpublish").addEventListener("click", async (e) => {
     await editor.unpublish() 
