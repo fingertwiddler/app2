@@ -417,7 +417,7 @@ class E {
     data.permalink = name;
     let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
-    await this.buildPost(data.permalink) 
+//    await this.buildPost(data.permalink) 
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
       setTimeout(() => {
