@@ -169,12 +169,15 @@ class Builder {
     let { content, data } = matter(md)
     data.permalink = key
     // Build Rendered Markdown HTML
+    let html = marked(content, { baseUrl: "../" }) 
+    /*
     let html;
     if (this.config.FEED.BASE.length === 0) {
       html = marked(content, { baseUrl: "../" }) 
     } else {
       html = marked(content, { baseUrl: this.config.FEED.BASE }) 
     }
+    */
     // create a hidden dom to extract out images
     let div = document.createElement("div")
     div.innerHTML = html
@@ -208,14 +211,10 @@ class Builder {
     return { html, data }
   }
   async getPost (key) {
-    console.time("getPost")
     let mdPath = `${this.config.SRC}/${key}`
-    let htmlPath = `${this.config.DEST}/${key}`
     let md = await fs.promises.readFile(mdPath, "utf8")
-    let html = await fs.promises.readFile(htmlPath, "utf8")
     let { content, data } = matter(md)
-    console.timeEnd("getPost")
-    return { html, data }
+    return { content, data }
   }
   async build () {
     // Create folders in case they're empty
@@ -226,11 +225,11 @@ class Builder {
     let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
-        let { html, data } = await this.getPost(key) 
+        let { content, data } = await this.getPost(key) 
         resolve({
           key: key,
           data: data,
-          html: html
+          content: content
         })
       })
     })
