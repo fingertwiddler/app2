@@ -91,7 +91,7 @@ export class Builder {
     }))
     for(let mod of modules) {
       await mod.default(publicItems, this.config, {
-        this.fs, this.git
+        fs: this.fs, git: this.git
       })
     }
   }
