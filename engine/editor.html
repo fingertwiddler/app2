@@ -216,8 +216,8 @@ class Builder {
       filename: `${config.SRC}/${filename}`,
       title: data.title
     }).trim()
-    await fs.promises.mkdir(`${config.DEST}/${mdFilename}`).catch((e) => { })
-    await fs.promises.writeFile(`${config.DEST}/${mdFilename}/index.html`, rendered)
+    await fs.promises.mkdir(`${config.DEST}/${filename}`).catch((e) => { })
+    await fs.promises.writeFile(`${config.DEST}/${filename}/index.html`, rendered)
 
     return { html, data }
   }
