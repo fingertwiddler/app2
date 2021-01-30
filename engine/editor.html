@@ -207,15 +207,16 @@ class Builder {
 
     return { html, data }
   }
-  /*
   async getPost (key) {
-    let srcPath = `${this.config.DEST}/${key}`
-    let destPath = `${this.config.DEST}/${key}`
-    let html = await fs.promises.readFile(contentPath, "utf8")
-    let data
+    console.time("getPost")
+    let mdPath = `${this.config.SRC}/${key}`
+    let htmlPath = `${this.config.DEST}/${key}`
+    let md = await fs.promises.readFile(mdPath, "utf8")
+    let html = await fs.promises.readFile(htmlPath, "utf8")
     let { content, data } = matter(md)
+    console.timeEnd("getPost")
+    retrun { html, data }
   }
-  */
   async build () {
     // Create folders in case they're empty
 
@@ -225,7 +226,7 @@ class Builder {
     let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
-        let { html, data } = await this.buildPost(key) 
+        let { html, data } = await this.getPost(key) 
         resolve({
           key: key,
           data: data,
@@ -417,7 +418,7 @@ class E {
     data.permalink = name;
     let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
-//    await this.buildPost(data.permalink) 
+    await this.builder.buildPost(data.permalink) 
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
       setTimeout(() => {
