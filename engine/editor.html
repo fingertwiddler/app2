@@ -215,7 +215,7 @@ class Builder {
     let html = await fs.promises.readFile(htmlPath, "utf8")
     let { content, data } = matter(md)
     console.timeEnd("getPost")
-    retrun { html, data }
+    return { html, data }
   }
   async build () {
     // Create folders in case they're empty
