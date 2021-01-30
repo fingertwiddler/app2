@@ -1,5 +1,6 @@
 import uslug from "https://jspm.dev/uslug"
 import matter from "https://jspm.dev/gray-matter"
+import Swal from "https://jspm.dev/sweetalert2"
 export class Model {
   constructor(o) {
     this.fs = o.fs

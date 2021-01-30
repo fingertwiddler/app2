@@ -1,5 +1,4 @@
 import matter from "https://jspm.dev/gray-matter"
-import Swal from "https://jspm.dev/sweetalert2"
 import Editor from "https://jspm.dev/@toast-ui/editor"
 export class E {
   constructor (o) {
