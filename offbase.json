@@ -7,7 +7,7 @@
     "to": "/home/src/assets/{{path}}"
   }, {
     "from": "/js/:filename.js",
-    "to": "/app/engines/{{filename}}.js",
+    "to": "/app/engine/{{filename}}.js",
     "type": "application/javascript"
   }, {
     "from": "/editor",
