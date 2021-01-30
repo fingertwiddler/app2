@@ -152,76 +152,79 @@ import { fs, git } from "/offbase.js"
 class Builder {
   constructor(o) {
     this.config = o.config
-    this.modules = o.modules
+//    this.modules = o.modules
     this.src = o.src
   }
-  async buildPost (key) {
-    console.time("read theme")
-    let tps = await fs.promises.readFile(this.config.THEME.POST, "utf8")
-    console.timeEnd("read theme")
-    let tpl = Handlebars.compile(tps)
-    let contentPath = `${this.config.SRC}/${key}`
-    console.time("read src")
-    let md = await fs.promises.readFile(contentPath, "utf8")
-    console.timeEnd("read src")
-    console.time("build")
-    // parse markdown
-    let { content, data } = matter(md)
-    data.permalink = key
-    // Build Rendered Markdown HTML
-    let html = marked(content, { baseUrl: "../" }) 
-    /*
-    let html;
-    if (this.config.FEED.BASE.length === 0) {
-      html = marked(content, { baseUrl: "../" }) 
-    } else {
-      html = marked(content, { baseUrl: this.config.FEED.BASE }) 
-    }
-    */
-    // create a hidden dom to extract out images
+  /***********************************************************************
+  *
+  * Input:
+  *   - content filename
+  *   - theme filename
+  *
+  * Output:
+  *   - jjj
+  ***********************************************************************/
+  async processImages(content, config) {
+    let re = /(?:!\[(.*?)\]\((.*?)\))/g
+    let matches = content.matchAll(re)
+    for(let m of matches) {
+      let url = m[2]
+      let match = /assets\/(.+)$/.exec(url)
+      if (match && match.length > 0) {
+        let b = await fs.promises.readFile(`${config.SRC}/assets/${match[1]}`)
+        await fs.promises.writeFile(`${config.DEST}/assets/${match[1]}`, b)
+      }
+
+
+  /*
     let div = document.createElement("div")
     div.innerHTML = html
-    let images = []
-    div.querySelectorAll("img").forEach((el) => {
-      images.push(el.getAttribute("src"))
+    let images = div.querySelectorAll("img").map((el) => {
+      return el.getAttribute("src")
     })
     // copy all assets to DEST
     for(let image of images) {
       let match = /assets\/(.+)$/.exec(image)
       if (match && match.length > 0) {
-        let assetPath = `${this.config.SRC}/assets/${match[1]}`
+        let assetPath = `${config.SRC}/assets/${match[1]}`
         let b = await fs.promises.readFile(assetPath)
-        await fs.promises.writeFile(`${this.config.DEST}/assets/${match[1]}`, b)
+        await fs.promises.writeFile(`${config.DEST}/assets/${match[1]}`, b)
       }
     }
-    // Build full HTML page for the post
-    let rendered = tpl({
-      name: this.config.NAME,
+    */
+  }
+  async buildPost (filename, config) {
+
+    // parse markdown metadata
+    let md = await fs.promises.readFile(`${config.SRC}/${filename}`, "utf8")
+    let { content, data } = matter(md)
+    data.permalink = filename
+    // build html from markdown
+    let html = marked(content, { baseUrl: "../" }) 
+    // extract images and write to DEST folder
+    //this.processImages(html)
+    this.processImages(content, config)
+
+    // Build full HTML page for the post and write to DEST
+    let theme = await fs.promises.readFile(config.THEME.POST, "utf8")
+    let template = Handlebars.compile(theme)
+    let rendered = template({
+      name: config.NAME,
       content: html,
       updated: data.updated,
-      filename: `${this.config.SRC}/${key}`,
+      filename: `${config.SRC}/${mdPath}`,
       title: data.title
     }).trim()
-
-    // Write post to DEST
-    await fs.promises.mkdir(`${this.config.DEST}/${key}`).catch((e) => { })
-    await fs.promises.writeFile(`${this.config.DEST}/${key}/index.html`, rendered)
-    console.timeEnd("build")
+    await fs.promises.mkdir(`${config.DEST}/${mdFilename}`).catch((e) => { })
+    await fs.promises.writeFile(`${config.DEST}/${mdFilename}/index.html`, rendered)
 
     return { html, data }
   }
   async getPost (key) {
-    let mdPath = `${this.config.SRC}/${key}`
-    let md = await fs.promises.readFile(mdPath, "utf8")
-    let { content, data } = matter(md)
-    return { content, data }
+    let md = await fs.promises.readFile(`${this.config.SRC}/${key}`, "utf8")
+    return matter(md)
   }
   async build () {
-    // Create folders in case they're empty
-
-
-    let filenames = []
-    //let meta = {}
     let src = await fs.promises.readdir(this.config.SRC)
     let promises = src.filter((key) => { return key !== "assets" }).map((key) => {
       return new Promise(async (resolve, reject) => {
@@ -246,12 +249,15 @@ class Builder {
       return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
 
-    for(let mod of this.modules.publish) {
+    let promises = config.events.publish.map((mod) => {
+      return import(`./module/${mod}`)
+    })
+    let modules = await Promise.all(promises)
+    for(let mod of modules) {
       await mod(publicItems, this.config, {
         fs, git
       })
     }
-
   }
 }
 class E {
@@ -278,9 +284,7 @@ class E {
           const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
           const hashArray = Array.from(new Uint8Array(hashBuffer));
           const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-          await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => {
-            console.log("error", e)
-          })
+          await fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => { console.log("error", e) })
           callback("assets/" + hash, hash)
           return false;
         }
@@ -322,9 +326,7 @@ class E {
     let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(this.src, updatedContent)
     await this.builder.build()
-    setTimeout(() => {
-      location.href = "/upload"
-    }, 1000)
+    location.href = "/upload"
   }
   async publish() {
     let { content, data } = this.content()
@@ -338,9 +340,7 @@ class E {
       return;
     }
     await this.builder.build()
-    setTimeout(() => {
-      location.href = "/upload"
-    }, 1000)
+    location.href = "/upload"
   }
   async save() {
     let { content, data, raw } = this.content()
@@ -417,12 +417,10 @@ class E {
     data.permalink = name;
     let updatedContent = matter.stringify(content, data)
     await fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
-    await this.builder.buildPost(data.permalink) 
+    await this.builder.buildPost(data.permalink, this.config)
     document.querySelector("#save").classList.remove("enabled")
     if (redirect) {
-      //setTimeout(() => {
-        location.href = "./editor?src=" + this.src
-      //}, 1000)
+      location.href = "./editor?src=" + this.src
     } else {
       this.editor.setMarkdown(updatedContent)
     }
@@ -443,9 +441,7 @@ class E {
       }
       // Build
       await this.builder.build()
-      setTimeout(() => {
-        location.href = "/upload"
-      }, 1000)
+      location.href = "/upload"
     }
   }
 };
@@ -461,18 +457,18 @@ var src = new URL(location.href).searchParams.get("src");
 
   // instantiate modules
 
-  let publishModules = []
-  for(let mod of config.events.publish) {
-    let o = await import(`./module/${mod}`)
-    publishModules.push(o.default) 
-  }
+//  let publishModules = []
+//  for(let mod of config.events.publish) {
+//    let o = await import(`./module/${mod}`)
+//    publishModules.push(o.default) 
+//  }
 
   var editor = new E({
     src: src,
     config: config.settings,
-    modules: {
-      publish: publishModules
-    }
+//    modules: {
+//      publish: publishModules
+//    }
   })
   document.querySelector("#delete").addEventListener("click", async (e) => {
     await editor.destroy()
