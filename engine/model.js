@@ -126,7 +126,7 @@ export class Model {
     let updatedContent = matter.stringify(content, data)
     await this.fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
     await this.builder.buildPost(data.permalink, this.config)
-    return status
+    return { status, name }
   }
   async destroy() {
     // Delete files
