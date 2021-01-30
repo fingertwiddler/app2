@@ -277,13 +277,13 @@ class Builder {
     })
     let items = await Promise.all(promises)
     let publicItems = []
-    items.forEach((item) => {
+    for(let item of items) {
       if (item.metadata.draft) {
         await fs.promises.unlink(`${this.config.DEST}/${key}/index.html`)
       } else {
         publicItems.push(item)
       }
-    })
+    }
     publicItems.sort((a, b) => {
       return parseInt(b.metadata.updated) - parseInt(a.metadata.updated);
     })
