@@ -249,7 +249,7 @@ class Builder {
       return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
 
-    let modules = await Promise.all(config.events.publish.map((mod) => {
+    let modules = await Promise.all(this.config.events.publish.map((mod) => {
       return import(`./module/${mod}`)
     }))
     for(let mod of modules) {
