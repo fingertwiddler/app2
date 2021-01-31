@@ -146,7 +146,7 @@ import { fs, git, config } from "/offbase.js"
 import { Model } from "./js/model.js"
 import { View } from "./js/view.js"
 var src = new URL(location.href).searchParams.get("src");
-if (src) src = decodeURIComponent(src)
+if (src) src = decodeURIComponent(src);
 (async () => {
   let c = await config()
   let model = new Model({ fs, git, src, config: c })
