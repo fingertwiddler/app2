@@ -33,7 +33,7 @@
       "CHUNK": 10
     }
   },
-  "$editable": {
+  "customize": {
     "lib.theme.url": { "label": "Theme URL" },
     "settings.NAME": { "label": "Blog name" },
     "settings.PAGE.CHUNK": { "label": "Items per page", "type": "number" },
