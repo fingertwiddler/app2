@@ -41,7 +41,7 @@ export class View {
       location.href = "/upload"
     })
     document.querySelector("#save").addEventListener("click", async (e) => {
-      let { status, path } = await model.save(this.content())
+      let { status, path } = await this.model.save(this.content())
       if (status === "created") {
         location.href = "./editor?src=" + path;
       } else {
