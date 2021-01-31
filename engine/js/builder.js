@@ -66,11 +66,11 @@ export class Builder {
     publicItems.sort((a, b) => {
       return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
-    let modules = await Promise.all(this.config.settings.events.publish.map((mod) => {
-      return import(`../module/${mod}`)
+    let libs = await Promise.all(this.config.settings.events.publish.map((mod) => {
+      return import(`../lib/${mod}`)
     }))
-    for(let mod of modules) {
-      await mod.default(publicItems, this.config, {
+    for(let lib of libs) {
+      await lib.default(publicItems, this.config, {
         fs: this.fs, git: this.git
       })
     }
