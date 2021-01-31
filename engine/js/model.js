@@ -8,7 +8,7 @@ export class Model {
     this.git = o.git
     this.config = o.config
     this.src = o.src
-    let builder = new Builder({
+    this.builder = new Builder({
       fs: this.fs,
       git: this.git, 
       src: this.src,
