@@ -17,10 +17,10 @@ export class Model {
     this.init()
   }
   async init() {
-    await this.fs.promises.mkdir(c.settings.SRC).catch((e) => {})
-    await this.fs.promises.mkdir(c.settings.DEST).catch((e) => {})
-    await this.fs.promises.mkdir(`${c.settings.SRC}/assets`).catch((e) => {})
-    await this.fs.promises.mkdir(`${c.settings.DEST}/assets`).catch((e) => {})
+    await this.fs.promises.mkdir(this.config.settings.SRC).catch((e) => {})
+    await this.fs.promises.mkdir(this.config.settings.DEST).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.settings.SRC}/assets`).catch((e) => {})
+    await this.fs.promises.mkdir(`${this.config.settings.DEST}/assets`).catch((e) => {})
   }
   async updated () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
