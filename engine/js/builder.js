@@ -68,7 +68,7 @@ export class Builder {
       return parseInt(b.data.updated) - parseInt(a.data.updated);
     })
     for(let item of publicItems) {
-      await this.builder.buildPost(item.key)
+      await this.buildPost(item.key)
     }
     let libs = await Promise.all(this.config.settings.events.publish.map((mod) => {
       return import(`../lib/${mod}`)
