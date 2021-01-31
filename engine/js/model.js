@@ -14,6 +14,7 @@ export class Model {
       src: this.src,
       config: this.config
     })
+    this.init()
   }
   async init() {
     await this.fs.promises.mkdir(c.settings.SRC).catch((e) => {})
