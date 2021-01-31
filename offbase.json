@@ -1,7 +1,6 @@
 {
   "name": "superblog",
   "description": "superblog",
-  "image": "/app/typewriter.jpg",
   "require": {
     "theme": {
       "url": "https://github.com/fingertwiddler/darktheme.git"
