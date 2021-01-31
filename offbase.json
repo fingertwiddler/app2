@@ -2,6 +2,46 @@
   "name": "superblog",
   "description": "superblog",
   "image": "/app/typewriter.jpg",
+  "require": {
+    "theme": {
+      "url": "https://github.com/fingertwiddler/darktheme.git"
+    },
+    "rss": {
+      "url": "https://github.com/fingertwiddler/rss.git"
+    },
+    "blog": {
+      "url": "https://github.com/fingertwiddler/blog.git"
+    }
+  },
+  "settings": {
+    "events": {
+      "publish": [
+        "blog", "rss"
+      ]
+    },
+    "SRC": "/home/src",
+    "DEST": "/home/blog",
+    "NAME": "Twiddler",
+    "THEME": {
+      "HOME": "/theme/index.hbs",
+      "POST": "/theme/post.hbs"
+    },
+    "PAGE": {
+      "CHUNK": 6
+    },
+    "FEED": {
+      "BASE": "",
+      "CHUNK": 10
+    }
+  },
+  "$editable": {
+    "require.app.url": { "label": "App URL" },
+    "require.theme.url": { "label": "Theme URL" },
+    "settings.NAME": { "label": "Blog name" },
+    "settings.PAGE.CHUNK": { "label": "Items per page", "type":     "number" },
+    "settings.FEED.BASE": { "label": "RSS Feed base URL" },
+    "settings.FEED.CHUNK": { "label": "Number of posts in the R    SS feed" }
+  },
   "routes": [{
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
