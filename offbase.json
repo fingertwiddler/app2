@@ -37,26 +37,26 @@
     "require.app.url": { "label": "App URL" },
     "require.theme.url": { "label": "Theme URL" },
     "settings.NAME": { "label": "Blog name" },
-    "settings.PAGE.CHUNK": { "label": "Items per page", "type":     "number" },
+    "settings.PAGE.CHUNK": { "label": "Items per page", "type": "number" },
     "settings.FEED.BASE": { "label": "RSS Feed base URL" },
-    "settings.FEED.CHUNK": { "label": "Number of posts in the R    SS feed" }
+    "settings.FEED.CHUNK": { "label": "Number of posts in the RSS feed" }
   },
   "routes": [{
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
   }, {
     "from": "/js/:filename.js",
-    "to": "/app/engine/js/{{filename}}.js",
+    "to": "/bin/engine/js/{{filename}}.js",
     "type": "application/javascript"
   }, {
     "from": "/editor",
-    "to": "/app/engine/editor.html"
+    "to": "/bin/engine/editor.html"
   }, {
     "from": "/post",
-    "to": "/app/engine/post.html"
+    "to": "/bin/engine/post.html"
   }, {
     "from": "/",
-    "to": "/app/engine/index.html",
+    "to": "/bin/engine/index.html",
     "type": "text/html"
   }, {
     "from": "/module/:path",
