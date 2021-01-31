@@ -40,7 +40,7 @@ export class Builder {
     let md = await this.fs.promises.readFile(`${this.config.settings.SRC}/${filename}`, "utf8")
     let { content, data } = matter(md)
     data.permalink = filename
-    let html = marked(content, { baseUrl: "../" }) 
+    let html = marked(content, { baseUrl: "../../" }) 
     await this.processContent( { content, html, data, filename } )
     await this.processImages({ content })
     return { html, data }
