@@ -60,7 +60,7 @@ export class Model {
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
     let images = []
     for(let match of matches) {
-      images.push(m[1])
+      images.push(match[1])
     }
     let imageTags = images.map((image, i) => {
       return (i === 0 ? `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
