@@ -31,8 +31,9 @@ export class Builder {
       filename: `${this.config.settings.SRC}/${o.filename}`,
       title: o.data.title
     }).trim()
-    await this.fs.promises.mkdir(`${this.config.settings.DEST}/${o.filename}`).catch((e) => { })
-    await this.fs.promises.writeFile(`${this.config.settings.DEST}/${o.filename}/index.html`, rendered)
+    await this.fs.promises.mkdir(`${this.config.settings.DEST}/post`).catch((e) => { })
+    await this.fs.promises.mkdir(`${this.config.settings.DEST}/post/${o.filename}`).catch((e) => { })
+    await this.fs.promises.writeFile(`${this.config.settings.DEST}/post/${o.filename}/index.html`, rendered)
   }
   // build a single post
   async buildPost (filename) {
