@@ -58,7 +58,9 @@ export class Model {
   }
   async save( { content, data, raw }) {
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
-    let images = matches.map(m => m[1])
+    let images = matches.map((m) => {
+      return m[1]
+    })
     let imageTags = images.map((image, i) => {
       return (i === 0 ? `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
     }).join("")
