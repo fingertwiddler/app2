@@ -130,7 +130,6 @@
     import { fs } from "/offbase.js"
     const src = new URL(location.href).searchParams.get("src")
     const template = Handlebars.compile(document.querySelector("#template").innerHTML)
-
     fs.promises.readFile(src, "utf8").then((content) => {
       let parsed = matter(content)
       let md = parsed.content

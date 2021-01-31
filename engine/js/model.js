@@ -8,12 +8,7 @@ export class Model {
     this.git = o.git
     this.config = o.config
     this.src = o.src
-    this.builder = new Builder({
-      fs: this.fs,
-      git: this.git, 
-      src: this.src,
-      config: this.config
-    })
+    this.builder = new Builder(o)
     this.init()
   }
   async init() {
@@ -25,8 +20,7 @@ export class Model {
   async updated () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
     let matrix = await this.git.statusMatrix({ fs: this.fs, dir: "/home" })
-    const filenames = matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
-    return filenames.length > 0
+    return matrix.filter((row) => { return !(row[HEAD] === 1 && row[WORKDIR] === 1 && row[STAGE] === 1) }).map(row => row[FILE])
   }
   async deleted () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
@@ -54,8 +48,8 @@ export class Model {
     data.draft = false;
     let updatedContent = matter.stringify(content, data)
     await this.fs.promises.writeFile(this.src, updatedContent)
-    let isupdated = await this.updated()
-    if (!isupdated) {
+    let updated = await this.updated()
+    if (updated.length === 0) {
       console.log("no update")
       alert("no update")
       return;
@@ -64,12 +58,9 @@ export class Model {
   }
   async save( { content, data, raw }) {
     let matches = raw.matchAll(/!\[.*?\]\((.*?)\)/g)
-    let images = []
-    for (let match of matches) {
-      images.push(match[1])
-    }
+    let images = matches.map(m => m[1])
     let imageTags = images.map((image, i) => {
-      return (i === 0 ?  `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
+      return (i === 0 ? `<img class='selected' src='${image}'>` : `<img src='${image}'>`)
     }).join("")
     let desc = (data.description ? data.description : document.querySelector(".tui-editor-contents").textContent.trim().replace(/(\r\n|\n|\r)/gm,"").slice(0, 300))
     let {title, description, image} = await Swal.fire({
@@ -95,17 +86,12 @@ export class Model {
           alert("please enter title")
           return false;
         }
-        try {
-          // the first time creating a file,
-          if (!this.src) {
-            //does the title already exist?
-            let slug = title.split().join("-").toLowerCase()
-            let f = await this.fs.promises.stat(`${this.config.settings.SRC}/${slug}`)
-            // if already exists, return false
+        if (!this.src) {
+          let f = await this.fs.promises.stat(`${this.config.settings.SRC}/${uslug(title)}`).catch((e) => {})
+          if (f) {
             alert("the file already exists")
             return false;
           }
-        } catch (e) {
         }
         return [
           document.querySelector(".publish-form .title").value,
@@ -120,40 +106,36 @@ export class Model {
         image: res.value[2]
       }
     })
+    let name
+    let status
+    if (this.src) {
+      name = this.src.split("/")[3]
+      status = "updated"
+    } else {
+      name = uslug(title)
+      status = "created"
+      this.src = `${this.config.settings.SRC}/${name}`
+    }
+    data.permalink = name;
     data.title = title
     data.description = description
     data.image = image
     data.updated = Date.now()
-
-    let name
-    let status = "updated"
-    if (this.src) {
-      name = this.src.split("/")[3]
-    } else {
-      name = uslug(title)
-      this.src = `${this.config.settings.SRC}/${name}`
-      status = "created"
-    }
-    data.permalink = name;
-
     let updatedContent = matter.stringify(content, data)
     await this.fs.promises.writeFile(`${this.config.settings.SRC}/${data.permalink}`, updatedContent)
     await this.builder.buildPost(data.permalink)
     return { status, path: this.src }
   }
+  // Remove the current file from the file system, and then remove from git
   async destroy() {
-    // Delete files
     await this.fs.promises.unlink(this.src)
     let name = this.src.split("/")[2]
     await this.fs.promises.unlink(`${this.config.settings.SRC}/${name}/index.html`).catch((e) => { })
     await this.fs.promises.rmdir(`${this.config.settings.SRC}/${name}`).catch((e) => {})
-    // remove from git too.
     let d = await this.deleted()
     for(let item of d) {
       await git.remove({ fs: this.fs, dir: "/home", filepath: item[0] })
     }
-    // Build
-    await this.builder.build()
   }
   async saveImage(blob, callback) {
     let ab = await blob.arrayBuffer()
