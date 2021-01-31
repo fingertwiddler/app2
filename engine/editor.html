@@ -136,47 +136,21 @@ nav button.enabled, nav .button.enabled {
 <div class='flexible'></div>
 <div class='draft hidden'>private</div>
 <button id='unpublish' class='enabled'>unpublish</button>
-<button id='upload' class='enabled'>publish</button>
+<button id='publish' class='enabled'>publish</button>
 </nav>
 <div class='container'>
   <div id='editor'></div>
 </div>
 <script type='module'>
-import { fs, git } from "/offbase.js"
-import { Builder } from "./js/builder.js"
+import { fs, git, config } from "/offbase.js"
 import { Model } from "./js/model.js"
-import { E } from "./js/editor.js"
+import { View } from "./js/view.js"
 var src = new URL(location.href).searchParams.get("src");
+if (src) src = decodeURIComponent(src)
 (async () => {
-  let o = await fs.promises.readFile("/home/offbase.json", "utf8")
-  let config = JSON.parse(o)
-
-  await fs.promises.mkdir(config.settings.SRC).catch((e) => {})
-  await fs.promises.mkdir(config.settings.DEST).catch((e) => {})
-  await fs.promises.mkdir(`${config.settings.SRC}/assets`).catch((e) => {})
-  await fs.promises.mkdir(`${config.settings.DEST}/assets`).catch((e) => {})
-
-  let builder = new Builder({ src, fs, git, config: config.settings })
-  let model = new Model({ fs, builder, git, src, config: config.settings })
-  let editor = new E({
-    model: model,
-    config: config.settings,
-  })
-  if (src) {
-    await editor.fill(src)
-  }
-  document.querySelector("#delete").addEventListener("click", async (e) => {
-    await editor.destroy()
-  })
-  document.querySelector("#unpublish").addEventListener("click", async (e) => {
-    await editor.unpublish() 
-  })
-  document.querySelector("#upload").addEventListener("click", async (e) => {
-    await editor.publish()
-  })
-  document.querySelector("#save").addEventListener("click", async (e) => {
-    await editor.save()
-  });
+  let c = await config()
+  let model = new Model({ fs, git, src, config: c })
+  let view = new View({ model: model })
 })();
 </script>
 </body>

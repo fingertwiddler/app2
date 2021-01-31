@@ -1,13 +1,25 @@
 import uslug from "https://jspm.dev/uslug"
 import matter from "https://jspm.dev/gray-matter"
 import Swal from "https://jspm.dev/sweetalert2"
+import { Builder } from "./js/builder.js"
 export class Model {
   constructor(o) {
     this.fs = o.fs
     this.git = o.git
-    this.builder = o.builder
     this.config = o.config
     this.src = o.src
+    let builder = new Builder({
+      fs: this.fs,
+      git: this.git, 
+      src: this.src,
+      config: this.config
+    })
+  }
+  async init() {
+    await this.fs.promises.mkdir(c.settings.SRC).catch((e) => {})
+    await this.fs.promises.mkdir(c.settings.DEST).catch((e) => {})
+    await this.fs.promises.mkdir(`${c.settings.SRC}/assets`).catch((e) => {})
+    await this.fs.promises.mkdir(`${c.settings.DEST}/assets`).catch((e) => {})
   }
   async updated () {
     const FILE = 0, HEAD = 1, WORKDIR = 2, STAGE = 3
@@ -24,7 +36,7 @@ export class Model {
     await this.builder.build()
   }
   async buildPost(filename) {
-    await this.builder.buildPost(filename, this.config)
+    await this.builder.buildPost(filename)
   }
   async load(path) {
     let raw = await this.fs.promises.readFile(path, "utf8")
@@ -87,7 +99,7 @@ export class Model {
           if (!this.src) {
             //does the title already exist?
             let slug = title.split().join("-").toLowerCase()
-            let f = await this.fs.promises.stat(`${this.config.SRC}/${slug}`)
+            let f = await this.fs.promises.stat(`${this.config.settings.SRC}/${slug}`)
             // if already exists, return false
             alert("the file already exists")
             return false;
@@ -118,22 +130,22 @@ export class Model {
       name = this.src.split("/")[3]
     } else {
       name = uslug(title)
-      this.src = `${this.config.SRC}/${name}`
+      this.src = `${this.config.settings.SRC}/${name}`
       status = "created"
     }
     data.permalink = name;
 
     let updatedContent = matter.stringify(content, data)
-    await this.fs.promises.writeFile(`${this.config.SRC}/${data.permalink}`, updatedContent)
-    await this.builder.buildPost(data.permalink, this.config)
+    await this.fs.promises.writeFile(`${this.config.settings.SRC}/${data.permalink}`, updatedContent)
+    await this.builder.buildPost(data.permalink)
     return { status, path: this.src }
   }
   async destroy() {
     // Delete files
     await this.fs.promises.unlink(this.src)
     let name = this.src.split("/")[2]
-    await this.fs.promises.unlink(`${this.config.SRC}/${name}/index.html`).catch((e) => { })
-    await this.fs.promises.rmdir(`${this.config.SRC}/${name}`).catch((e) => {})
+    await this.fs.promises.unlink(`${this.config.settings.SRC}/${name}/index.html`).catch((e) => { })
+    await this.fs.promises.rmdir(`${this.config.settings.SRC}/${name}`).catch((e) => {})
     // remove from git too.
     let d = await this.deleted()
     for(let item of d) {
@@ -148,7 +160,7 @@ export class Model {
     const hashBuffer = await crypto.subtle.digest('SHA-256', bytes)
     const hashArray = Array.from(new Uint8Array(hashBuffer));
     const hash = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
-    await this.fs.promises.writeFile(`${this.config.SRC}/assets/${hash}`, bytes).catch((e) => { console.log("error", e) })
+    await this.fs.promises.writeFile(`${this.config.settings.SRC}/assets/${hash}`, bytes).catch((e) => { console.log("error", e) })
     callback("assets/" + hash, hash)
   }
 }
