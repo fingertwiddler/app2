@@ -1,7 +1,7 @@
 import uslug from "https://jspm.dev/uslug"
 import matter from "https://jspm.dev/gray-matter"
 import Swal from "https://jspm.dev/sweetalert2"
-import { Builder } from "./js/builder.js"
+import { Builder } from "./builder.js"
 export class Model {
   constructor(o) {
     this.fs = o.fs
