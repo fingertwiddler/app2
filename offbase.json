@@ -34,7 +34,7 @@
     }
   },
   "customize": {
-    "app.url": { "label": "App git URL" },
+    "bin.url": { "label": "App git URL" },
     "lib.theme.url": { "label": "Theme git URL" },
     "settings.NAME": { "label": "Blog name" },
     "settings.PAGE.CHUNK": { "label": "Items per page", "type": "number" },
