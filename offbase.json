@@ -1,46 +1,6 @@
 {
-  "name": "superblog",
+  "name": "app2",
   "description": "superblog",
-  "lib": {
-    "theme": {
-      "url": "https://github.com/fingertwiddler/darktheme.git"
-    },
-    "rss": {
-      "url": "https://github.com/fingertwiddler/rss.git"
-    },
-    "blog": {
-      "url": "https://github.com/fingertwiddler/blog.git"
-    }
-  },
-  "settings": {
-    "events": {
-      "publish": [
-        "blog", "rss"
-      ]
-    },
-    "SRC": "/home/src",
-    "DEST": "/home/blog",
-    "NAME": "Twiddler",
-    "THEME": {
-      "HOME": "/lib/theme/index.hbs",
-      "POST": "/lib/theme/post.hbs"
-    },
-    "PAGE": {
-      "CHUNK": 6
-    },
-    "FEED": {
-      "BASE": "",
-      "CHUNK": 10
-    }
-  },
-  "customize": {
-    "bin.url": { "label": "App git URL" },
-    "lib.theme.url": { "label": "Theme git URL" },
-    "settings.NAME": { "label": "Blog name" },
-    "settings.PAGE.CHUNK": { "label": "Items per page", "type": "number" },
-    "settings.FEED.BASE": { "label": "RSS Feed base URL" },
-    "settings.FEED.CHUNK": { "label": "Number of posts in the RSS feed" }
-  },
   "routes": [{
     "from": "/assets/:path",
     "to": "/home/src/assets/{{path}}"
